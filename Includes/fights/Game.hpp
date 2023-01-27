@@ -16,11 +16,11 @@ constexpr int EXTENDED_BOARD_SIZE = BOARD_SIZE + 2;
 
 constexpr int INITIAL_WALL_COUNT_PER_PLAYER = 10;
 
-class State final
+class Game final
 {
  public:
-    State();
-    State(const State&) = default;
+    Game();
+    Game(const Game&) = default;
 
     //! Returns the color of current player
     Player GetCurrentPlayer() const;
@@ -45,18 +45,5 @@ class State final
                                           INITIAL_WALL_COUNT_PER_PLAYER };
 
     Player player_{ Player::BLUE };
-};
-
-class Game final
-{
- public:
-    //! Returns the game state
-    const State& GetState() const;
-
-    //! Checks the action is valid
-    bool IsValidAction() const;
-
- private:
-    State state_;
 };
 }  // namespace fights
