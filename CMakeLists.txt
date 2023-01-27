@@ -13,8 +13,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
+# 3rd parties
+include_directories(Libraries/doctest/doctest)
+
 # Includes
 include_directories(Includes)
 
 # Project module
 add_subdirectory(Sources/fights)
+add_subdirectory(Tests/UnitTests)
