@@ -25,4 +25,14 @@ int& Point::Y()
 {
     return y_;
 }
+
+bool Point::operator==(const Point& other) const
+{
+    return (other.x_ == x_) && (other.y_ == y_);
+}
+
+bool Point::operator!=(const Point& other) const
+{
+    return !(*this == other);
+}
 }

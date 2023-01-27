@@ -19,6 +19,9 @@ class Point final
     int Y() const;
     int& Y();
 
+    bool operator==(const Point& other) const;
+    bool operator!=(const Point& other) const;
+
  private:
     int x_{ 0 }, y_{ 0 };
 };
