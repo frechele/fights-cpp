@@ -322,7 +322,7 @@ bool WallBoard::IsVerticalWallPlaced(int x, int y) const
     return walls_[pointToVerticalWallIndex(x, y)] & VERTICAL_WALL;
 }
 
-Player Game::GetWinnter() const
+Player Game::GetWinner() const
 {
     if (GetPlayerPosition(Player::BLUE).Y() <= 1)
         return Player::BLUE;

@@ -91,7 +91,7 @@ class Game final
     bool IsVerticalWallPlaced(Point pos) const;
 
     //! Returns the winner
-    Player GetWinnter() const;
+    Player GetWinner() const;
 
     //! Visualize the game state
     std::string ToString() const;
