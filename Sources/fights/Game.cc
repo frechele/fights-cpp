@@ -91,10 +91,12 @@ void WallBoard::Rotate(int x, int y)
             if (!IsIntersection(ox, oy))
                 continue;
 
-            if ((dx == 0 || dx == 4) && IsHorizontalWallPlaced(ox, oy) && IsHorizontalWallPlaced(ox + 1, oy) && IsIntersection(ox, oy))
+            if ((dx == 0 || dx == 4) && IsHorizontalWallPlaced(ox, oy) &&
+                IsHorizontalWallPlaced(ox + 1, oy) && IsIntersection(ox, oy))
                 continue;
 
-            if ((dy == 0 || dy == 4) && IsVerticalWallPlaced(ox, oy) && IsVerticalWallPlaced(ox, oy + 1) && IsIntersection(ox, oy))
+            if ((dy == 0 || dy == 4) && IsVerticalWallPlaced(ox, oy) &&
+                IsVerticalWallPlaced(ox, oy + 1) && IsIntersection(ox, oy))
                 continue;
 
             tmpIntersection[pointToIntersectionIndex(tx, ty)] = true;
@@ -514,6 +516,86 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
 
         newPos.X() += 1;
     }
+    else if (action.GetDirection() == Actions::Move::Direction::L_UP)
+    {
+        int error = 0;
+
+        // LEFT -> UP case
+        error +=
+            wallBoard_.IsVerticalWallPlaced(currentPos.X() - 1, currentPos.Y());
+
+        // UP -> LEFT case
+        error += wallBoard_.IsHorizontalWallPlaced(currentPos.X(),
+                                                   currentPos.Y() - 1);
+
+        if (error == 2)  // there is no possible way
+        {
+            return false;
+        }
+
+        newPos.X() -= 1;
+        newPos.Y() -= 1;
+    }
+    else if (action.GetDirection() == Actions::Move::Direction::R_UP)
+    {
+        int error = 0;
+
+        // RIGHT -> UP case
+        error +=
+            wallBoard_.IsVerticalWallPlaced(currentPos.X(), currentPos.Y());
+
+        // UP -> RIGHT case
+        error += wallBoard_.IsHorizontalWallPlaced(currentPos.X(),
+                                                   currentPos.Y() - 1);
+
+        if (error == 2)  // there is no possible way
+        {
+            return false;
+        }
+
+        newPos.X() += 1;
+        newPos.Y() -= 1;
+    }
+    else if (action.GetDirection() == Actions::Move::Direction::L_DOWN)
+    {
+        int error = 0;
+
+        // LEFT -> DOWN case
+        error +=
+            wallBoard_.IsVerticalWallPlaced(currentPos.X() - 1, currentPos.Y());
+
+        // DOWN -> LEFT case
+        error +=
+            wallBoard_.IsHorizontalWallPlaced(currentPos.X(), currentPos.Y());
+
+        if (error == 2)  // there is no possible way
+        {
+            return false;
+        }
+
+        newPos.X() -= 1;
+        newPos.Y() += 1;
+    }
+    else if (action.GetDirection() == Actions::Move::Direction::R_DOWN)
+    {
+        int error = 0;
+
+        // RIGHT -> DOWN case
+        error +=
+            wallBoard_.IsVerticalWallPlaced(currentPos.X() + 1, currentPos.Y());
+
+        // DOWN -> RIGHT case
+        error +=
+            wallBoard_.IsHorizontalWallPlaced(currentPos.X(), currentPos.Y());
+
+        if (error == 2)  // there is no possible way
+        {
+            return false;
+        }
+
+        newPos.X() += 1;
+        newPos.Y() += 1;
+    }
 
     const bool inBoard = (newPos.X() > 0 && newPos.X() <= BOARD_SIZE) &&
                          (newPos.Y() > 0 && newPos.X() <= BOARD_SIZE);
@@ -532,8 +614,7 @@ bool Game::isValidPlaceHorizontalWall(
     if (!inBoard)
         return false;
 
-    if (wallBoard_.IsVerticalWallPlaced(pos.X(), pos.Y()) &&
-        wallBoard_.IsVerticalWallPlaced(pos.X(), pos.Y() + 1))
+    if (wallBoard_.IsIntersection(pos.X(), pos.Y()))
         return false;
 
     if (wallBoard_.IsHorizontalWallPlaced(pos.X(), pos.Y()) ||
@@ -560,8 +641,7 @@ bool Game::isValidPlaceVerticalWall(const Actions::PlaceVerticalWall& action,
     if (!inBoard)
         return false;
 
-    if (wallBoard_.IsVerticalWallPlaced(pos.X(), pos.Y()) ||
-        wallBoard_.IsVerticalWallPlaced(pos.X(), pos.Y() + 1))
+    if (wallBoard_.IsIntersection(pos.X(), pos.Y()))
         return false;
 
     if (wallBoard_.IsHorizontalWallPlaced(pos.X(), pos.Y()) &&
