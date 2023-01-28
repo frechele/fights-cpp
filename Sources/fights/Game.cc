@@ -1,16 +1,22 @@
 #include <fights/Game.hpp>
 
 #include <bitset>
+#include <queue>
 #include <sstream>
 #include <stdexcept>
-#include <queue>
 
 namespace fights
 {
+bool WallBoard::IsIntersection(int x, int y) const
+{
+    return intersection_[pointToIntersectionIndex(x, y)];
+}
+
 void WallBoard::PlaceHorizontalWall(int x, int y)
 {
     walls_[pointToHorizontalWallIndex(x, y)] |= HORIZONTAL_WALL;
     walls_[pointToHorizontalWallIndex(x + 1, y)] |= HORIZONTAL_WALL;
+    intersection_[pointToIntersectionIndex(x, y)] = true;
     clearBoundary();
 }
 
@@ -18,12 +24,14 @@ void WallBoard::PlaceVerticalWall(int x, int y)
 {
     walls_[pointToVerticalWallIndex(x, y)] |= VERTICAL_WALL;
     walls_[pointToVerticalWallIndex(x, y + 1)] |= VERTICAL_WALL;
+    intersection_[pointToIntersectionIndex(x, y)] = true;
     clearBoundary();
 }
 
 void WallBoard::Rotate(int x, int y)
 {
     auto tmpWall = walls_;
+    auto tmpIntersection = intersection_;
 
     for (int dx = 0; dx <= 4; ++dx)
     {
@@ -37,9 +45,12 @@ void WallBoard::Rotate(int x, int y)
 
             if (dy > 0)
                 tmpWall[pointToVerticalWallIndex(nx, ny)] &= ~VERTICAL_WALL;
+
+            tmpIntersection[pointToIntersectionIndex(nx, ny)] = false;
         }
     }
 
+    // move walls
     for (int dx = 0; dx <= 4; ++dx)
     {
         for (int dy = 0; dy <= 4; ++dy)
@@ -47,14 +58,16 @@ void WallBoard::Rotate(int x, int y)
             const int ox = x + dx - 1;
             const int oy = y + dy - 1;
 
-            if (dx > 0 && walls_[pointToHorizontalWallIndex(ox, oy)] & HORIZONTAL_WALL)
+            if (dx > 0 &&
+                walls_[pointToHorizontalWallIndex(ox, oy)] & HORIZONTAL_WALL)
             {
                 const int tx = x + 3 - dy;
                 const int ty = y + dx - 1;
 
                 tmpWall[pointToVerticalWallIndex(tx, ty)] |= VERTICAL_WALL;
             }
-            if (dy > 0 && walls_[pointToVerticalWallIndex(ox, oy)] & VERTICAL_WALL)
+            if (dy > 0 &&
+                walls_[pointToVerticalWallIndex(ox, oy)] & VERTICAL_WALL)
             {
                 const int tx = x + 4 - dy;
                 const int ty = y + dx - 1;
@@ -64,7 +77,32 @@ void WallBoard::Rotate(int x, int y)
         }
     }
 
+    // move intersections
+    for (int dx = 0; dx <= 4; ++dx)
+    {
+        for (int dy = 0; dy <= 4; ++dy)
+        {
+            const int ox = x + dx - 1;
+            const int oy = y + dy - 1;
+
+            const int tx = x + 3 - dy;
+            const int ty = y + dx - 1;
+
+            if (!IsIntersection(ox, oy))
+                continue;
+
+            if ((dx == 0 || dx == 4) && IsHorizontalWallPlaced(ox, oy) && IsHorizontalWallPlaced(ox + 1, oy) && IsIntersection(ox, oy))
+                continue;
+
+            if ((dy == 0 || dy == 4) && IsVerticalWallPlaced(ox, oy) && IsVerticalWallPlaced(ox, oy + 1) && IsIntersection(ox, oy))
+                continue;
+
+            tmpIntersection[pointToIntersectionIndex(tx, ty)] = true;
+        }
+    }
+
     walls_ = std::move(tmpWall);
+    intersection_ = std::move(tmpIntersection);
 
     clearBoundary();
 }
@@ -72,7 +110,7 @@ void WallBoard::Rotate(int x, int y)
 bool WallBoard::CheckReachability(Point playerPos, int target) const
 {
     std::bitset<EXTENDED_BOARD_SIZE * EXTENDED_BOARD_SIZE> visited;
-    
+
     std::queue<Point> Q;
     Q.emplace(playerPos);
 
@@ -110,6 +148,104 @@ bool WallBoard::CheckReachability(Point playerPos, int target) const
     return false;
 }
 
+std::string WallBoard::ToString() const
+{
+    std::stringstream ss;
+
+    // build top line
+    for (int x = 0; x < BOARD_SIZE + 1; ++x)
+    {
+        if (x == 0)
+        {
+            ss << "┌";
+        }
+        else if (x == BOARD_SIZE)
+        {
+            ss << "───┐";
+        }
+        else
+        {
+            ss << "───┬";
+        }
+    }
+    ss << "\n";
+
+    // build middle
+    for (int y = 1; y <= BOARD_SIZE; ++y)
+    {
+        // build players or vertical lines
+        for (int x = 0; x < BOARD_SIZE + 1; ++x)
+        {
+            if (x == 0)
+            {
+                ss << "│";
+            }
+            else
+            {
+                ss << "   ";
+
+                if (IsVerticalWallPlaced(x, y))
+                    ss << "┃";
+                else
+                    ss << "│";
+            }
+        }
+        ss << "\n";
+
+        // build horizontal lines
+        if (y <= BOARD_SIZE - 1)
+        {
+            for (int x = 0; x < BOARD_SIZE + 1; ++x)
+            {
+                if (x == 0)
+                {
+                    ss << "├";
+                }
+                else
+                {
+                    if (IsHorizontalWallPlaced(x, y))
+                        ss << "━━━";
+                    else
+                        ss << "───";
+
+                    if (x == BOARD_SIZE)
+                    {
+                        ss << "┤";
+                    }
+                    else
+                    {
+                        if (IsIntersection(x, y))
+                            ss << "╋";
+                        else
+                            ss << "┼";
+                    }
+                }
+            }
+            ss << "\n";
+        }
+    }
+
+    // build bottom line
+    for (int x = 0; x < BOARD_SIZE + 1; ++x)
+    {
+        if (x == 0)
+        {
+            ss << "└";
+        }
+        else if (x == BOARD_SIZE)
+        {
+            ss << "───┘";
+        }
+        else
+        {
+            ss << "───┴";
+        }
+    }
+    ss << "\n";
+
+    return ss.str();
+}
+
 void WallBoard::clearBoundary()
 {
     for (int i = 0; i <= BOARD_SIZE + 1; ++i)
@@ -129,6 +265,14 @@ void WallBoard::clearBoundary()
 
         walls_[pointToVerticalWallIndex(i, 0)] &= ~VERTICAL_WALL;
         walls_[pointToVerticalWallIndex(i, BOARD_SIZE + 1)] &= ~VERTICAL_WALL;
+    }
+
+    for (int i = 0; i <= BOARD_SIZE; ++i)
+    {
+        intersection_[pointToIntersectionIndex(i, 0)] = false;
+        intersection_[pointToIntersectionIndex(i, BOARD_SIZE)] = false;
+        intersection_[pointToIntersectionIndex(0, i)] = false;
+        intersection_[pointToIntersectionIndex(i, BOARD_SIZE)] = false;
     }
 }
 
@@ -180,10 +324,10 @@ bool WallBoard::IsVerticalWallPlaced(int x, int y) const
 
 Player Game::GetWinnter() const
 {
-    if (GetPlayerPosition(Player::BLUE).Y() == 1)
+    if (GetPlayerPosition(Player::BLUE).Y() <= 1)
         return Player::BLUE;
 
-    if (GetPlayerPosition(Player::RED).Y() == BOARD_SIZE)
+    if (GetPlayerPosition(Player::RED).Y() >= BOARD_SIZE)
         return Player::RED;
 
     // not finished
@@ -221,7 +365,7 @@ std::string Game::ToString() const
             if (x == 0)
             {
                 ss << "│";
-            } 
+            }
             else
             {
                 if (GetPlayerPosition(Player::BLUE) == Point(x, y))
@@ -247,7 +391,7 @@ std::string Game::ToString() const
                 if (x == 0)
                 {
                     ss << "├";
-                } 
+                }
                 else
                 {
                     if (wallBoard_.IsHorizontalWallPlaced(x, y))
@@ -261,7 +405,10 @@ std::string Game::ToString() const
                     }
                     else
                     {
-                        ss << "┼";
+                        if (wallBoard_.IsIntersection(x, y))
+                            ss << "╋";
+                        else
+                            ss << "┼";
                     }
                 }
             }
@@ -286,8 +433,10 @@ std::string Game::ToString() const
         }
     }
     ss << "\n"
-       << "remain walls: [blue] " << GetRemainWallCount(Player::BLUE) << " [red] " << GetRemainWallCount(Player::RED) << "\n"
-       << "current player: " << PlayerUtils::ToString(GetCurrentPlayer()) << "\n";
+       << "remain walls: [blue] " << GetRemainWallCount(Player::BLUE)
+       << " [red] " << GetRemainWallCount(Player::RED) << "\n"
+       << "current player: " << PlayerUtils::ToString(GetCurrentPlayer())
+       << "\n";
 
     return ss.str();
 }
