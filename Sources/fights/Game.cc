@@ -1,7 +1,9 @@
 #include <fights/Game.hpp>
 
+#include <bitset>
 #include <sstream>
 #include <stdexcept>
+#include <queue>
 
 namespace fights
 {
@@ -69,6 +71,42 @@ void WallBoard::Rotate(int x, int y)
 
 bool WallBoard::CheckReachability(Point playerPos, int target) const
 {
+    std::bitset<EXTENDED_BOARD_SIZE * EXTENDED_BOARD_SIZE> visited;
+    
+    std::queue<Point> Q;
+    Q.emplace(playerPos);
+
+    while (!Q.empty())
+    {
+        const auto pt = Q.front();
+        Q.pop();
+        visited.set(pointToBoardIndex(pt.X(), pt.Y()));
+
+        if (pt.Y() == target)
+            return true;
+
+        if (pt.Y() > 1 && !IsHorizontalWallPlaced(pt.X(), pt.Y() - 1))
+        {
+            if (!visited.test(pointToBoardIndex(pt.X(), pt.Y() - 1)))
+                Q.emplace(pt.X(), pt.Y() - 1);
+        }
+        if (pt.Y() < BOARD_SIZE && !IsHorizontalWallPlaced(pt.X(), pt.Y()))
+        {
+            if (!visited.test(pointToBoardIndex(pt.X(), pt.Y() + 1)))
+                Q.emplace(pt.X(), pt.Y() + 1);
+        }
+        if (pt.X() > 1 && !IsVerticalWallPlaced(pt.X() - 1, pt.Y()))
+        {
+            if (!visited.test(pointToBoardIndex(pt.X() - 1, pt.Y())))
+                Q.emplace(pt.X() - 1, pt.Y());
+        }
+        if (pt.X() < BOARD_SIZE && !IsVerticalWallPlaced(pt.X(), pt.Y()))
+        {
+            if (!visited.test(pointToBoardIndex(pt.X() + 1, pt.Y())))
+                Q.emplace(pt.X() + 1, pt.Y());
+        }
+    }
+
     return false;
 }
 
@@ -292,7 +330,7 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
             return false;
         }
 
-        newPos.Y() += 1;
+        newPos.Y() -= 1;
     }
     else if (action.GetDirection() == Actions::Move::Direction::DOWN)
     {
@@ -301,7 +339,7 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
             return false;
         }
 
-        newPos.Y() -= 1;
+        newPos.Y() += 1;
     }
     else if (action.GetDirection() == Actions::Move::Direction::LEFT)
     {

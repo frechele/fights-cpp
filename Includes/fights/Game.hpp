@@ -40,6 +40,11 @@ class WallBoard final
         return x + y * (BOARD_SIZE + 1);
     }
 
+    static constexpr int pointToBoardIndex(int x, int y)
+    {
+      return x + y * EXTENDED_BOARD_SIZE;
+    }
+
     void clearBoundary();
 
  private:
