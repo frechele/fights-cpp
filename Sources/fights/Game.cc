@@ -224,7 +224,12 @@ std::string Game::ToString() const
             } 
             else
             {
-                ss << "   ";
+                if (GetPlayerPosition(Player::BLUE) == Point(x, y))
+                    ss << " B ";
+                else if (GetPlayerPosition(Player::RED) == Point(x, y))
+                    ss << " R ";
+                else
+                    ss << "   ";
 
                 if (wallBoard_.IsVerticalWallPlaced(x, y))
                     ss << "┃";
@@ -280,8 +285,9 @@ std::string Game::ToString() const
             ss << "───┴";
         }
     }
-    ss << "\n";
-
+    ss << "\n"
+       << "remain walls: [blue] " << GetRemainWallCount(Player::BLUE) << " [red] " << GetRemainWallCount(Player::RED) << "\n"
+       << "current player: " << PlayerUtils::ToString(GetCurrentPlayer()) << "\n";
 
     return ss.str();
 }

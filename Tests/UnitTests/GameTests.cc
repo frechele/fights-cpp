@@ -1,5 +1,7 @@
 #include <doctest.h>
 
+#include <iostream>
+
 #include <fights/Game.hpp>
 #include <fights/Player.hpp>
 
@@ -195,4 +197,6 @@ TEST_CASE("[Game] Initialization tests")
     const Point redPosition(5, 1);
     CHECK_EQ(game.GetPlayerPosition(Player::BLUE), bluePosition);
     CHECK_EQ(game.GetPlayerPosition(Player::RED), redPosition);
+
+    std::cerr << game.ToString();
 }
