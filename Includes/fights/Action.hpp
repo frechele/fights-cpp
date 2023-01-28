@@ -30,7 +30,13 @@ class Move : public Action
         UP,
         DOWN,
         LEFT,
-        RIGHT
+        RIGHT,
+
+        // special moves (needs help from opponent)
+        L_UP,
+        R_UP,
+        L_DOWN,
+        R_DOWN,
     };
 
  public:
