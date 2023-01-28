@@ -113,7 +113,14 @@ class Game final
                                   Player player) const;
     bool isValidRotate(const Actions::Rotate& action, Player player) const;
 
+    void playMove(const Actions::Move& action, Player player);
+    void playPlaceHorizontalWall(const Actions::PlaceHorizontalWall& action, Player player);
+    void playPlaceVerticalWall(const Actions::PlaceVerticalWall& action, Player player);
+    void playRotate(const Actions::Rotate& action, Player player);
+
     void setPlayerPosition(Player player, Point newPosition);
+
+    int& getRemainWallCount(Player player);
 
  private:
     std::array<Point, 2> playerPositions_;

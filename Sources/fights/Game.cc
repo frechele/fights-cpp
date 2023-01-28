@@ -472,6 +472,37 @@ bool Game::IsValidAction(const Action& action, Player player) const
 
 void Game::Play(const Action& action, Player player)
 {
+    if (!IsValidAction(action, player))
+    {
+        throw std::invalid_argument("invalid action");
+    }
+
+    if (player == Player::NONE)
+    {
+        player = player_;
+    }
+
+    switch (action.GetType())
+    {
+        case ActionType::MOVE:
+            playMove(static_cast<const Actions::Move&>(action), player);
+            break;
+
+        case ActionType::PLACE_HORIZONTAL_WALL:
+            playPlaceHorizontalWall(
+                static_cast<const Actions::PlaceHorizontalWall&>(action),
+                player);
+            break;
+
+        case ActionType::PLACE_VERTICAL_WALL:
+            playPlaceVerticalWall(
+                static_cast<const Actions::PlaceVerticalWall&>(action), player);
+            break;
+
+        case ActionType::ROTATE:
+            playRotate(static_cast<const Actions::Rotate&>(action), player);
+            break;
+    }
 }
 
 bool Game::isValidMove(const Actions::Move& action, Player player) const
@@ -604,9 +635,11 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
 }
 
 bool Game::isValidPlaceHorizontalWall(
-    const Actions::PlaceHorizontalWall& action,
-    [[maybe_unused]] Player player) const
+    const Actions::PlaceHorizontalWall& action, Player player) const
 {
+    if (GetRemainWallCount(player) < 1)
+        return false;
+
     const Point pos = action.GetPosition();
 
     const bool inBoard = (pos.X() > 0 && pos.X() <= WALL_PLACEABLE_SIZE) &&
@@ -632,8 +665,11 @@ bool Game::isValidPlaceHorizontalWall(
 }
 
 bool Game::isValidPlaceVerticalWall(const Actions::PlaceVerticalWall& action,
-                                    [[maybe_unused]] Player player) const
+                                    Player player) const
 {
+    if (GetRemainWallCount(player) < 1)
+        return false;
+
     const Point pos = action.GetPosition();
 
     const bool inBoard = (pos.X() > 0 && pos.X() <= WALL_PLACEABLE_SIZE) &&
@@ -658,9 +694,11 @@ bool Game::isValidPlaceVerticalWall(const Actions::PlaceVerticalWall& action,
     return true;
 }
 
-bool Game::isValidRotate(const Actions::Rotate& action,
-                         [[maybe_unused]] Player player) const
+bool Game::isValidRotate(const Actions::Rotate& action, Player player) const
 {
+    if (GetRemainWallCount(player) < 2)
+        return false;
+
     const Point pos = action.GetPosition();
 
     const bool inBoard = (pos.X() > 0 && pos.X() <= ROTATABLE_SIZE) &&
@@ -678,8 +716,66 @@ bool Game::isValidRotate(const Actions::Rotate& action,
     return true;
 }
 
+void Game::playMove(const Actions::Move& action, Player player)
+{
+    Point pt = GetPlayerPosition(player);
+
+    if (action.GetDirection() == Actions::Move::Direction::LEFT ||
+        action.GetDirection() == Actions::Move::Direction::L_UP ||
+        action.GetDirection() == Actions::Move::Direction::L_DOWN)
+        pt.X() -= 1;
+
+    if (action.GetDirection() == Actions::Move::Direction::RIGHT ||
+        action.GetDirection() == Actions::Move::Direction::R_UP ||
+        action.GetDirection() == Actions::Move::Direction::R_DOWN)
+        pt.X() += 1;
+
+    if (action.GetDirection() == Actions::Move::Direction::UP ||
+        action.GetDirection() == Actions::Move::Direction::L_UP ||
+        action.GetDirection() == Actions::Move::Direction::R_UP)
+        pt.Y() -= 1;
+
+    if (action.GetDirection() == Actions::Move::Direction::DOWN ||
+        action.GetDirection() == Actions::Move::Direction::L_DOWN ||
+        action.GetDirection() == Actions::Move::Direction::R_DOWN)
+        pt.Y() += 1;
+
+    setPlayerPosition(player, pt);
+}
+
+void Game::playPlaceHorizontalWall(const Actions::PlaceHorizontalWall& action,
+                                   Player player)
+{
+    getRemainWallCount(player) -= 1;
+
+    const Point pt = action.GetPosition();
+    wallBoard_.PlaceHorizontalWall(pt.X(), pt.Y());
+}
+
+void Game::playPlaceVerticalWall(const Actions::PlaceVerticalWall& action,
+                                 Player player)
+{
+    getRemainWallCount(player) -= 1;
+
+    const Point pt = action.GetPosition();
+    wallBoard_.PlaceVerticalWall(pt.X(), pt.Y());
+}
+
+void Game::playRotate(const Actions::Rotate& action, Player player)
+{
+    getRemainWallCount(player) -= 2;
+
+    const Point pt = action.GetPosition();
+    wallBoard_.Rotate(pt.X(), pt.Y());
+}
+
 void Game::setPlayerPosition(Player player, Point newPosition)
 {
     playerPositions_[static_cast<int>(player)] = newPosition;
+}
+
+int& Game::getRemainWallCount(Player player)
+{
+    return remainWallCounts_[static_cast<int>(player)];
 }
 }  // namespace fights
