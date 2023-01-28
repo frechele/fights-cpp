@@ -175,9 +175,9 @@ TEST_CASE("[Game/WallBoard] Reachability tests")
     board1.PlaceVerticalWall(4, 6);
     board1.PlaceVerticalWall(4, 8);
 
-    CHECK_FALSE(board1.CheckReachability(Point(4, 6), 0));
+    CHECK_FALSE(board1.CheckReachability(Point(4, 6), 1));
     CHECK(board1.CheckReachability(Point(7, 4), BOARD_SIZE));
-    CHECK(board1.CheckReachability(Point(7, 4), 0));
+    CHECK(board1.CheckReachability(Point(7, 4), 1));
     CHECK(board1.CheckReachability(Point(4, 6), BOARD_SIZE));
 }
 
