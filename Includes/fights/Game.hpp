@@ -29,8 +29,6 @@ class WallBoard final
 
     bool CheckReachability(Point playerPos, int target) const;
 
-    std::string ToString() const;
-
  private:
     static constexpr int pointToHorizontalWallIndex(int x, int y)
     {

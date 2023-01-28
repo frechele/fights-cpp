@@ -72,102 +72,6 @@ bool WallBoard::CheckReachability(Point playerPos, int target) const
     return false;
 }
 
-std::string WallBoard::ToString() const
-{
-    std::stringstream ss;
-
-    // build top line
-    for (int x = 0; x < BOARD_SIZE + 1; ++x)
-    {
-        if (x == 0)
-        {
-            ss << "┌";
-        }
-        else if (x == BOARD_SIZE)
-        {
-            ss << "───┐";
-        }
-        else
-        {
-            ss << "───┬";
-        }
-    }
-    ss << "\n";
-
-    // build middle
-    for (int y = 1; y <= BOARD_SIZE; ++y)
-    {
-        // build players or vertical lines
-        for (int x = 0; x < BOARD_SIZE + 1; ++x)
-        {
-            if (x == 0)
-            {
-                ss << "│";
-            } 
-            else
-            {
-                ss << "   ";
-
-                if (IsVerticalWallPlaced(x, y))
-                    ss << "┃";
-                else
-                    ss << "│";
-            }
-        }
-        ss << "\n";
-
-        // build horizontal lines
-        if (y <= BOARD_SIZE - 1)
-        {
-            for (int x = 0; x < BOARD_SIZE + 1; ++x)
-            {
-                if (x == 0)
-                {
-                    ss << "├";
-                } 
-                else
-                {
-                    if (IsHorizontalWallPlaced(x, y))
-                        ss << "━━━";
-                    else
-                        ss << "───";
-
-                    if (x == BOARD_SIZE)
-                    {
-                        ss << "┤";
-                    }
-                    else
-                    {
-                        ss << "┼";
-                    }
-                }
-            }
-            ss << "\n";
-        }
-    }
-
-    // build bottom line
-    for (int x = 0; x < BOARD_SIZE + 1; ++x)
-    {
-        if (x == 0)
-        {
-            ss << "└";
-        }
-        else if (x == BOARD_SIZE)
-        {
-            ss << "───┘";
-        }
-        else
-        {
-            ss << "───┴";
-        }
-    }
-    ss << "\n";
-
-
-    return ss.str();
-}
-
 void WallBoard::clearBoundary()
 {
     for (int i = 0; i <= BOARD_SIZE + 1; ++i)
@@ -270,12 +174,76 @@ std::string Game::ToString() const
     }
     ss << "\n";
 
-    for (int y = 0; y <= BOARD_SIZE + 1; ++y)
+    // build middle
+    for (int y = 1; y <= BOARD_SIZE; ++y)
     {
-        for (int x = 0; x <= BOARD_SIZE + 1; ++x)
+        // build players or vertical lines
+        for (int x = 0; x < BOARD_SIZE + 1; ++x)
         {
+            if (x == 0)
+            {
+                ss << "│";
+            } 
+            else
+            {
+                ss << "   ";
+
+                if (wallBoard_.IsVerticalWallPlaced(x, y))
+                    ss << "┃";
+                else
+                    ss << "│";
+            }
+        }
+        ss << "\n";
+
+        // build horizontal lines
+        if (y <= BOARD_SIZE - 1)
+        {
+            for (int x = 0; x < BOARD_SIZE + 1; ++x)
+            {
+                if (x == 0)
+                {
+                    ss << "├";
+                } 
+                else
+                {
+                    if (wallBoard_.IsHorizontalWallPlaced(x, y))
+                        ss << "━━━";
+                    else
+                        ss << "───";
+
+                    if (x == BOARD_SIZE)
+                    {
+                        ss << "┤";
+                    }
+                    else
+                    {
+                        ss << "┼";
+                    }
+                }
+            }
+            ss << "\n";
         }
     }
+
+    // build bottom line
+    for (int x = 0; x < BOARD_SIZE + 1; ++x)
+    {
+        if (x == 0)
+        {
+            ss << "└";
+        }
+        else if (x == BOARD_SIZE)
+        {
+            ss << "───┘";
+        }
+        else
+        {
+            ss << "───┴";
+        }
+    }
+    ss << "\n";
+
 
     return ss.str();
 }
