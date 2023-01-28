@@ -29,6 +29,17 @@ TEST_CASE("[Game/WallBoard] Place tests")
     board.PlaceVerticalWall(6, 5);
     board.PlaceVerticalWall(8, 3);
 
+    for (int x = 0; x <= BOARD_SIZE; ++x)
+    {
+        for (int y = 0; y <= BOARD_SIZE; ++y)
+        {
+            const bool check = ((x == 3) && (y == 4)) ||
+                               ((x == 2) && (y == 1)) ||
+                               ((x == 6) && (y == 5)) || ((x == 8) && (y == 3));
+            CHECK_EQ(board.IsIntersection(x, y), check);
+        }
+    }
+
     for (int x = 0; x <= BOARD_SIZE + 1; ++x)
     {
         for (int y = 0; y <= BOARD_SIZE; ++y)
@@ -61,7 +72,35 @@ TEST_CASE("[Game/WallBoard] Rotation tests (basic)")
     board.PlaceVerticalWall(6, 3);
     board.PlaceVerticalWall(6, 5);
 
+    // Check intersections (before rotation)
+    for (int x = 0; x <= BOARD_SIZE; ++x)
+    {
+        for (int y = 0; y <= BOARD_SIZE; ++y)
+        {
+            const bool check = ((x == 4) && (y == 5)) ||
+                               ((x == 4) && (y == 7)) ||
+                               ((x == 5) && (y == 2)) ||
+                               ((x == 6) && (y == 3)) || ((x == 6) && (y == 5));
+            CHECK_MESSAGE(board.IsIntersection(x, y) == check, "x = ", x,
+                          ", y = ", y);
+        }
+    }
+
     board.Rotate(5, 3);
+
+    // Check intersections (after rotation)
+    for (int x = 0; x <= BOARD_SIZE; ++x)
+    {
+        for (int y = 0; y <= BOARD_SIZE; ++y)
+        {
+            const bool check = ((x == 8) && (y == 3)) ||
+                               ((x == 4) && (y == 7)) ||
+                               ((x == 5) && (y == 2)) ||
+                               ((x == 5) && (y == 4)) || ((x == 7) && (y == 4));
+            CHECK_MESSAGE(board.IsIntersection(x, y) == check, "x = ", x,
+                          ", y = ", y);
+        }
+    }
 
     // Check horizontal walls
     for (int x = 0; x <= BOARD_SIZE + 1; ++x)
@@ -102,6 +141,18 @@ TEST_CASE("[Game/WallBoard] Rotation tests (mid split)")
 
     board.Rotate(5, 4);
 
+    // Check intersections
+    for (int x = 0; x <= BOARD_SIZE; ++x)
+    {
+        for (int y = 0; y <= BOARD_SIZE; ++y)
+        {
+            const bool check = ((x == 5) && (y == 2)) ||
+                               ((x == 6) && (y == 3)) || ((x == 6) && (y == 5));
+            CHECK_MESSAGE(board.IsIntersection(x, y) == check, "x = ", x,
+                          ", y = ", y);
+        }
+    }
+
     // Check horizontal walls
     for (int x = 0; x <= BOARD_SIZE + 1; ++x)
     {
@@ -140,6 +191,19 @@ TEST_CASE("[Game/WallBoard] Rotation tests (go to border)")
     board.PlaceVerticalWall(6, 5);
 
     board.Rotate(6, 3);
+
+    // Check intersections
+    for (int x = 0; x <= BOARD_SIZE; ++x)
+    {
+        for (int y = 0; y <= BOARD_SIZE; ++y)
+        {
+            const bool check = ((x == 6) && (y == 3)) ||
+                               ((x == 8) && (y == 3)) ||
+                               ((x == 4) && (y == 5)) || ((x == 4) && (y == 7));
+            CHECK_MESSAGE(board.IsIntersection(x, y) == check, "x = ", x,
+                          ", y = ", y);
+        }
+    }
 
     // Check horizontal walls
     for (int x = 0; x <= BOARD_SIZE + 1; ++x)
