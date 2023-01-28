@@ -7,13 +7,17 @@ namespace fights
 enum class Player
 {
     BLUE,
-    RED
+    RED,
+    NONE
 };
 
 namespace PlayerUtils
 {
 constexpr Player Opponent(Player player)
 {
+    if (player == Player::NONE)
+        return Player::NONE;
+
     return player == Player::BLUE ? Player::RED : Player::BLUE;
 }
 }  // namespace PlayerUtils
