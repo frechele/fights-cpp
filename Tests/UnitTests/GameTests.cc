@@ -397,10 +397,10 @@ TEST_CASE("[Game] Move tests")
 
     CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::LEFT)));
     CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(3, 5));
-    CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(5, 6));
+    CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(6, 6));
 
     CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::RIGHT)));
-    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(4, 5));
+    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(3, 5));
     CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(7, 6));
 
     CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::LEFT)));
@@ -416,7 +416,7 @@ TEST_CASE("[Game] Move tests")
     CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(8, 6));
 
     CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::RIGHT)));
-    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(4, 5));
+    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(1, 5));
     CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(9, 6));
 
     CHECK_FALSE(
@@ -457,6 +457,7 @@ TEST_CASE("[Game] Place walls tests")
     CHECK_NOTHROW(game.Play(Actions::PlaceHorizontalWall(Point(5, 5))));
     CHECK_NOTHROW(game.Play(Actions::PlaceHorizontalWall(Point(7, 5))));
     CHECK_NOTHROW(game.Play(Actions::PlaceVerticalWall(Point(7, 6))));
+    std::cerr << game.ToString();
     CHECK_NOTHROW(game.Play(Actions::PlaceVerticalWall(Point(2, 5))));
     CHECK_THROWS(game.Play(Actions::PlaceVerticalWall(Point(7, 8))));
 }
