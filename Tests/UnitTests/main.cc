@@ -6,5 +6,4 @@ int main()
     doctest::Context context;
 
     return context.run();
-
 }
