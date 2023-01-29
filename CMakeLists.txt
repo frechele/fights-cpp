@@ -21,4 +21,7 @@ include_directories(Includes)
 
 # Project module
 add_subdirectory(Sources/fights)
+add_subdirectory(Sources/search)
+add_subdirectory(Sources/selfplay)
+
 add_subdirectory(Tests/UnitTests)

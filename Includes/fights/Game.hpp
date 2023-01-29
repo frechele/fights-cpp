@@ -63,7 +63,7 @@ class WallBoard final
     std::array<bool, (BOARD_SIZE + 1) * (BOARD_SIZE + 1)> intersection_{ 0 };
 };
 
-class Game final
+class Game
 {
  public:
     Game(bool flipped = false);
@@ -72,6 +72,8 @@ class Game final
 
     Game& operator=(const Game&) = default;
     Game& operator=(Game&&) = default;
+
+    virtual ~Game() noexcept = default;
 
     //! Returns the color of current player
     Player GetCurrentPlayer() const;
