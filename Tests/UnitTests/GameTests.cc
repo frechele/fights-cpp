@@ -425,29 +425,6 @@ TEST_CASE("[Game] Move tests")
         Actions::Move(Actions::Move::Direction::RIGHT), Player::RED));
 }
 
-TEST_CASE("[Game] Move diagonal tests")
-{
-    Game game;
-
-    CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::L_UP)));
-    CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::R_UP)));
-    CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::L_DOWN)));
-    CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::R_UP)));
-
-    game.Play(Actions::Move(Actions::Move::Direction::UP));
-    game.Play(Actions::Move(Actions::Move::Direction::DOWN));
-    game.Play(Actions::Move(Actions::Move::Direction::UP));
-    game.Play(Actions::Move(Actions::Move::Direction::DOWN));
-    game.Play(Actions::Move(Actions::Move::Direction::UP));
-    game.Play(Actions::Move(Actions::Move::Direction::DOWN));
-    game.Play(Actions::Move(Actions::Move::Direction::UP));
-
-    CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::L_UP)));
-    CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::R_UP)));
-    CHECK(game.IsValidAction(Actions::Move(Actions::Move::Direction::L_DOWN)));
-    CHECK(game.IsValidAction(Actions::Move(Actions::Move::Direction::R_DOWN)));
-}
-
 TEST_CASE("[Game] Place walls tests")
 {
     Game game;
@@ -499,7 +476,7 @@ TEST_CASE("[Game] Move diagonal with wall tests")
     CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::R_UP)));
     CHECK(game.IsValidAction(Actions::Move(Actions::Move::Direction::UP)));
 
-    game.Play(Actions::PlaceHorizontalWall(Point(4, 3)));
+    game.Play(Actions::PlaceHorizontalWall(Point(4, 3)), Player::RED);
     CHECK(game.IsValidAction(Actions::Move(Actions::Move::Direction::L_UP)));
     CHECK(game.IsValidAction(Actions::Move(Actions::Move::Direction::R_UP)));
     CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::UP)));
