@@ -5,6 +5,8 @@
 #include <sstream>
 #include <stdexcept>
 
+#include <iostream>
+
 namespace fights
 {
 bool WallBoard::IsIntersection(int x, int y) const
@@ -278,10 +280,27 @@ void WallBoard::clearBoundary()
     }
 }
 
-Game::Game()
+Game::Game(bool flipped) : flipped_(flipped)
 {
-    setPlayerPosition(Player::BLUE, Point((1 + BOARD_SIZE) / 2, BOARD_SIZE));
-    setPlayerPosition(Player::RED, Point((1 + BOARD_SIZE) / 2, 1));
+    constexpr int TOP_LINE = 1;
+    constexpr int BOTTOM_LINE = BOARD_SIZE;
+
+    if (flipped)
+    {
+        setPlayerPosition(Player::BLUE, Point((1 + BOARD_SIZE) / 2, TOP_LINE));
+        setPlayerPosition(Player::RED,
+                          Point((1 + BOARD_SIZE) / 2, BOTTOM_LINE));
+        setPlayerTarget(Player::BLUE, BOTTOM_LINE);
+        setPlayerTarget(Player::RED, TOP_LINE);
+    }
+    else
+    {
+        setPlayerPosition(Player::BLUE,
+                          Point((1 + BOARD_SIZE) / 2, BOTTOM_LINE));
+        setPlayerPosition(Player::RED, Point((1 + BOARD_SIZE) / 2, TOP_LINE));
+        setPlayerTarget(Player::BLUE, TOP_LINE);
+        setPlayerTarget(Player::RED, BOTTOM_LINE);
+    }
 }
 
 Player Game::GetCurrentPlayer() const
@@ -302,6 +321,11 @@ int Game::GetRemainWallCount(Player player) const
 Point Game::GetPlayerPosition(Player player) const
 {
     return playerPositions_[static_cast<int>(player)];
+}
+
+int Game::GetPlayerTarget(Player player) const
+{
+    return playerTargets_[static_cast<int>(player)];
 }
 
 bool Game::IsHorizontalWallPlaced(Point pos) const
@@ -326,11 +350,17 @@ bool WallBoard::IsVerticalWallPlaced(int x, int y) const
 
 Player Game::GetWinner() const
 {
-    if (GetPlayerPosition(Player::BLUE).Y() <= 1)
-        return Player::BLUE;
+    const Player goUpPlayer =
+        (GetPlayerTarget(Player::BLUE) > GetPlayerTarget(Player::RED))
+            ? Player::RED
+            : Player::BLUE;
+    const Player goDownPlayer = PlayerUtils::Opponent(goUpPlayer);
 
-    if (GetPlayerPosition(Player::RED).Y() >= BOARD_SIZE)
-        return Player::RED;
+    if (GetPlayerPosition(goUpPlayer).Y() <= GetPlayerTarget(goUpPlayer))
+        return goUpPlayer;
+
+    if (GetPlayerPosition(goDownPlayer).Y() >= GetPlayerTarget(goDownPlayer))
+        return goDownPlayer;
 
     // not finished
     return Player::NONE;
@@ -503,11 +533,14 @@ void Game::Play(const Action& action, Player player)
             playRotate(static_cast<const Actions::Rotate&>(action), player);
             break;
     }
+
+    player_ = PlayerUtils::Opponent(player);
 }
 
 bool Game::isValidMove(const Actions::Move& action, Player player) const
 {
     const Point currentPos = GetPlayerPosition(player);
+    const Point opponentPos = GetPlayerPosition(PlayerUtils::Opponent(player));
     Point newPos = currentPos;
 
     if (action.GetDirection() == Actions::Move::Direction::UP)
@@ -519,6 +552,17 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
         }
 
         newPos.Y() -= 1;
+
+        if (opponentPos == newPos)
+        {
+            if (newPos.Y() > 1 &&
+                wallBoard_.IsHorizontalWallPlaced(newPos.X(), newPos.Y() - 1))
+            {
+                return false;
+            }
+
+            newPos.Y() -= 1;
+        }
     }
     else if (action.GetDirection() == Actions::Move::Direction::DOWN)
     {
@@ -528,6 +572,17 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
         }
 
         newPos.Y() += 1;
+
+        if (opponentPos == newPos)
+        {
+            if (newPos.Y() < WALL_PLACEABLE_SIZE &&
+                wallBoard_.IsHorizontalWallPlaced(newPos.X(), newPos.Y()))
+            {
+                return false;
+            }
+
+            newPos.Y() += 1;
+        }
     }
     else if (action.GetDirection() == Actions::Move::Direction::LEFT)
     {
@@ -537,6 +592,17 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
         }
 
         newPos.X() -= 1;
+
+        if (opponentPos == newPos)
+        {
+            if (newPos.X() > 1 &&
+                wallBoard_.IsVerticalWallPlaced(newPos.X() - 1, newPos.Y()))
+            {
+                return false;
+            }
+
+            newPos.X() -= 1;
+        }
     }
     else if (action.GetDirection() == Actions::Move::Direction::RIGHT)
     {
@@ -546,20 +612,42 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
         }
 
         newPos.X() += 1;
+
+        if (opponentPos == newPos)
+        {
+            if (newPos.X() < WALL_PLACEABLE_SIZE &&
+                wallBoard_.IsVerticalWallPlaced(newPos.X(), newPos.Y()))
+            {
+                return false;
+            }
+
+            newPos.X() += 1;
+        }
     }
     else if (action.GetDirection() == Actions::Move::Direction::L_UP)
     {
-        int error = 0;
-
-        // LEFT -> UP case
-        error +=
-            wallBoard_.IsVerticalWallPlaced(currentPos.X() - 1, currentPos.Y());
-
-        // UP -> LEFT case
-        error += wallBoard_.IsHorizontalWallPlaced(currentPos.X(),
-                                                   currentPos.Y() - 1);
-
-        if (error == 2)  // there is no possible way
+        if (opponentPos == Point(currentPos.X() - 1, currentPos.Y()) &&
+            !wallBoard_.IsVerticalWallPlaced(
+                currentPos.X() - 1, currentPos.Y()))  // left first case
+        {
+            if (currentPos.X() <= 2 || !wallBoard_.IsVerticalWallPlaced(
+                                          currentPos.X() - 2, currentPos.Y()))
+            {
+                return false;
+            }
+        }
+        else if (opponentPos == Point(currentPos.X(), currentPos.Y() - 1) &&
+                 !wallBoard_.IsHorizontalWallPlaced(
+                     currentPos.X(),
+                     currentPos.Y() - 1))  // up first case
+        {
+            if (currentPos.Y() <= 2 || !wallBoard_.IsHorizontalWallPlaced(
+                                          currentPos.X(), currentPos.Y() - 2))
+            {
+                return false;
+            }
+        }
+        else
         {
             return false;
         }
@@ -569,17 +657,29 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
     }
     else if (action.GetDirection() == Actions::Move::Direction::R_UP)
     {
-        int error = 0;
-
-        // RIGHT -> UP case
-        error +=
-            wallBoard_.IsVerticalWallPlaced(currentPos.X(), currentPos.Y());
-
-        // UP -> RIGHT case
-        error += wallBoard_.IsHorizontalWallPlaced(currentPos.X(),
-                                                   currentPos.Y() - 1);
-
-        if (error == 2)  // there is no possible way
+        if (opponentPos == Point(currentPos.X() + 1, currentPos.Y()) &&
+            !wallBoard_.IsVerticalWallPlaced(
+                currentPos.X(), currentPos.Y()))  // right first case
+        {
+            if (currentPos.X() >= WALL_PLACEABLE_SIZE ||
+                !wallBoard_.IsVerticalWallPlaced(currentPos.X() + 1,
+                                                 currentPos.Y()))
+            {
+                return false;
+            }
+        }
+        else if (opponentPos == Point(currentPos.X(), currentPos.Y() - 1) &&
+                 !wallBoard_.IsHorizontalWallPlaced(
+                     currentPos.X(),
+                     currentPos.Y() - 1))  // up first case
+        {
+            if (currentPos.Y() <= 2 || !wallBoard_.IsHorizontalWallPlaced(
+                                          currentPos.X(), currentPos.Y() - 2))
+            {
+                return false;
+            }
+        }
+        else
         {
             return false;
         }
@@ -589,17 +689,29 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
     }
     else if (action.GetDirection() == Actions::Move::Direction::L_DOWN)
     {
-        int error = 0;
-
-        // LEFT -> DOWN case
-        error +=
-            wallBoard_.IsVerticalWallPlaced(currentPos.X() - 1, currentPos.Y());
-
-        // DOWN -> LEFT case
-        error +=
-            wallBoard_.IsHorizontalWallPlaced(currentPos.X(), currentPos.Y());
-
-        if (error == 2)  // there is no possible way
+        if (opponentPos == Point(currentPos.X() - 1, currentPos.Y()) &&
+            !wallBoard_.IsVerticalWallPlaced(
+                currentPos.X() - 1, currentPos.Y()))  // left first case
+        {
+            if (currentPos.X() <= 2 || !wallBoard_.IsVerticalWallPlaced(
+                                          currentPos.X() - 2, currentPos.Y()))
+            {
+                return false;
+            }
+        }
+        else if (opponentPos == Point(currentPos.X(), currentPos.Y() + 1) &&
+                 !wallBoard_.IsHorizontalWallPlaced(
+                     currentPos.X(),
+                     currentPos.Y()))  // down first case
+        {
+            if (currentPos.Y() >= WALL_PLACEABLE_SIZE ||
+                !wallBoard_.IsHorizontalWallPlaced(currentPos.X(),
+                                                   currentPos.Y() + 1))
+            {
+                return false;
+            }
+        }
+        else
         {
             return false;
         }
@@ -609,17 +721,30 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
     }
     else if (action.GetDirection() == Actions::Move::Direction::R_DOWN)
     {
-        int error = 0;
-
-        // RIGHT -> DOWN case
-        error +=
-            wallBoard_.IsVerticalWallPlaced(currentPos.X() + 1, currentPos.Y());
-
-        // DOWN -> RIGHT case
-        error +=
-            wallBoard_.IsHorizontalWallPlaced(currentPos.X(), currentPos.Y());
-
-        if (error == 2)  // there is no possible way
+        if (opponentPos == Point(currentPos.X() + 1, currentPos.Y()) &&
+            !wallBoard_.IsVerticalWallPlaced(
+                currentPos.X(), currentPos.Y()))  // right first case
+        {
+            if (currentPos.X() >= WALL_PLACEABLE_SIZE ||
+                !wallBoard_.IsVerticalWallPlaced(currentPos.X() + 1,
+                                                 currentPos.Y()))
+            {
+                return false;
+            }
+        }
+        else if (opponentPos == Point(currentPos.X(), currentPos.Y() + 1) &&
+                 !wallBoard_.IsHorizontalWallPlaced(
+                     currentPos.X(),
+                     currentPos.Y()))  // down first case
+        {
+            if (currentPos.Y() >= WALL_PLACEABLE_SIZE ||
+                !wallBoard_.IsHorizontalWallPlaced(currentPos.X(),
+                                                   currentPos.Y() + 1))
+            {
+                return false;
+            }
+        }
+        else
         {
             return false;
         }
@@ -629,7 +754,7 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
     }
 
     const bool inBoard = (newPos.X() > 0 && newPos.X() <= BOARD_SIZE) &&
-                         (newPos.Y() > 0 && newPos.X() <= BOARD_SIZE);
+                         (newPos.Y() > 0 && newPos.Y() <= BOARD_SIZE);
 
     return inBoard;
 }
@@ -680,8 +805,8 @@ bool Game::isValidPlaceVerticalWall(const Actions::PlaceVerticalWall& action,
     if (wallBoard_.IsIntersection(pos.X(), pos.Y()))
         return false;
 
-    if (wallBoard_.IsHorizontalWallPlaced(pos.X(), pos.Y()) &&
-        wallBoard_.IsHorizontalWallPlaced(pos.X() + 1, pos.Y()))
+    if (wallBoard_.IsVerticalWallPlaced(pos.X(), pos.Y()) &&
+        wallBoard_.IsVerticalWallPlaced(pos.X(), pos.Y() + 1))
         return false;
 
     WallBoard tmpBoard{ wallBoard_ };
@@ -719,26 +844,59 @@ bool Game::isValidRotate(const Actions::Rotate& action, Player player) const
 void Game::playMove(const Actions::Move& action, Player player)
 {
     Point pt = GetPlayerPosition(player);
+    const Point opponentPt = GetPlayerPosition(PlayerUtils::Opponent(player));
 
     if (action.GetDirection() == Actions::Move::Direction::LEFT ||
         action.GetDirection() == Actions::Move::Direction::L_UP ||
         action.GetDirection() == Actions::Move::Direction::L_DOWN)
+    {
         pt.X() -= 1;
+
+        if (action.GetDirection() == Actions::Move::Direction::LEFT &&
+            opponentPt == pt)
+        {
+            pt.X() -= 1;
+        }
+    }
 
     if (action.GetDirection() == Actions::Move::Direction::RIGHT ||
         action.GetDirection() == Actions::Move::Direction::R_UP ||
         action.GetDirection() == Actions::Move::Direction::R_DOWN)
+    {
         pt.X() += 1;
+
+        if (action.GetDirection() == Actions::Move::Direction::RIGHT &&
+            opponentPt == pt)
+        {
+            pt.X() += 1;
+        }
+    }
 
     if (action.GetDirection() == Actions::Move::Direction::UP ||
         action.GetDirection() == Actions::Move::Direction::L_UP ||
         action.GetDirection() == Actions::Move::Direction::R_UP)
+    {
         pt.Y() -= 1;
+
+        if (action.GetDirection() == Actions::Move::Direction::UP &&
+            opponentPt == pt)
+        {
+            pt.Y() -= 1;
+        }
+    }
 
     if (action.GetDirection() == Actions::Move::Direction::DOWN ||
         action.GetDirection() == Actions::Move::Direction::L_DOWN ||
         action.GetDirection() == Actions::Move::Direction::R_DOWN)
+    {
         pt.Y() += 1;
+
+        if (action.GetDirection() == Actions::Move::Direction::DOWN &&
+            opponentPt == pt)
+        {
+            pt.Y() += 1;
+        }
+    }
 
     setPlayerPosition(player, pt);
 }
@@ -772,6 +930,11 @@ void Game::playRotate(const Actions::Rotate& action, Player player)
 void Game::setPlayerPosition(Player player, Point newPosition)
 {
     playerPositions_[static_cast<int>(player)] = newPosition;
+}
+
+void Game::setPlayerTarget(Player player, int newTarget)
+{
+    playerTargets_[static_cast<int>(player)] = newTarget;
 }
 
 int& Game::getRemainWallCount(Player player)

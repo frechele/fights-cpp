@@ -66,7 +66,7 @@ class WallBoard final
 class Game final
 {
  public:
-    Game();
+    Game(bool flipped = false);
     Game(const Game&) = default;
     Game(Game&&) = default;
 
@@ -84,11 +84,17 @@ class Game final
     //! Returns the position of \p player
     Point GetPlayerPosition(Player player) const;
 
+    //! Returns the target line of \p player
+    int GetPlayerTarget(Player player) const;
+
     //! Returns whether there is horizontal wall at \p pos
     bool IsHorizontalWallPlaced(Point pos) const;
 
     //! Returns whether there is vertical wall at \p pos
     bool IsVerticalWallPlaced(Point pos) const;
+
+    //! Returns whether there is intersection at \p pos
+    bool IsIntersection(Point pos) const;
 
     //! Returns the winner
     Player GetWinner() const;
@@ -119,16 +125,19 @@ class Game final
     void playRotate(const Actions::Rotate& action, Player player);
 
     void setPlayerPosition(Player player, Point newPosition);
+    void setPlayerTarget(Player player, int newTarget);
 
     int& getRemainWallCount(Player player);
 
  private:
     std::array<Point, 2> playerPositions_;
+    std::array<int, 2> playerTargets_;
     std::array<int, 2> remainWallCounts_{ INITIAL_WALL_COUNT_PER_PLAYER,
                                           INITIAL_WALL_COUNT_PER_PLAYER };
 
     WallBoard wallBoard_;
 
     Player player_{ Player::BLUE };
+    bool flipped_;
 };
 }  // namespace fights
