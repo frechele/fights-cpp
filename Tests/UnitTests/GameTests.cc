@@ -249,18 +249,419 @@ TEST_CASE("[Game/WallBoard] Reachability tests")
 
 TEST_CASE("[Game] Initialization tests")
 {
+    {
+        Game game;
+
+        CHECK_EQ(game.GetCurrentPlayer(), Player::BLUE);
+        CHECK_EQ(game.GetOpponentPlayer(), Player::RED);
+
+        CHECK_EQ(game.GetRemainWallCount(Player::BLUE), 10);
+        CHECK_EQ(game.GetRemainWallCount(Player::RED), 10);
+
+        const Point bluePosition(5, 9);
+        const Point redPosition(5, 1);
+        CHECK_EQ(game.GetPlayerPosition(Player::BLUE), bluePosition);
+        CHECK_EQ(game.GetPlayerPosition(Player::RED), redPosition);
+
+        std::cerr << "[non-flipped]\n" << game.ToString();
+    }
+
+    {
+        Game game(true);
+
+        CHECK_EQ(game.GetCurrentPlayer(), Player::BLUE);
+        CHECK_EQ(game.GetOpponentPlayer(), Player::RED);
+
+        CHECK_EQ(game.GetRemainWallCount(Player::BLUE), 10);
+        CHECK_EQ(game.GetRemainWallCount(Player::RED), 10);
+
+        const Point redPosition(5, 9);
+        const Point bluePosition(5, 1);
+        CHECK_EQ(game.GetPlayerPosition(Player::BLUE), bluePosition);
+        CHECK_EQ(game.GetPlayerPosition(Player::RED), redPosition);
+
+        std::cerr << "\n[flipped]\n" << game.ToString();
+    }
+}
+
+TEST_CASE("[Game] Player turn change tests")
+{
+    {
+        Game game;
+
+        Player cur = game.GetCurrentPlayer();
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetCurrentPlayer(), PlayerUtils::Opponent(cur));
+
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetCurrentPlayer(), cur);
+    }
+
+    {
+        Game game;
+
+        Player cur = game.GetCurrentPlayer();
+        game.Play(Actions::PlaceHorizontalWall(Point(1, 1)));
+        CHECK_EQ(game.GetCurrentPlayer(), PlayerUtils::Opponent(cur));
+
+        game.Play(Actions::PlaceHorizontalWall(Point(5, 5)));
+        CHECK_EQ(game.GetCurrentPlayer(), cur);
+    }
+
+    {
+        Game game;
+
+        Player cur = game.GetCurrentPlayer();
+        game.Play(Actions::PlaceVerticalWall(Point(1, 1)));
+        CHECK_EQ(game.GetCurrentPlayer(), PlayerUtils::Opponent(cur));
+
+        game.Play(Actions::PlaceVerticalWall(Point(5, 5)));
+        CHECK_EQ(game.GetCurrentPlayer(), cur);
+    }
+
+    {
+        Game game;
+
+        Player cur = game.GetCurrentPlayer();
+        game.Play(Actions::Rotate(Point(1, 1)));
+        CHECK_EQ(game.GetCurrentPlayer(), PlayerUtils::Opponent(cur));
+
+        game.Play(Actions::Rotate(Point(5, 5)));
+        CHECK_EQ(game.GetCurrentPlayer(), cur);
+    }
+}
+
+TEST_CASE("[Game] Player turn change tests (manual)")
+{
     Game game;
 
+    game.Play(Actions::Move(Actions::Move::Direction::DOWN), Player::RED);
     CHECK_EQ(game.GetCurrentPlayer(), Player::BLUE);
-    CHECK_EQ(game.GetOpponentPlayer(), Player::RED);
 
-    CHECK_EQ(game.GetRemainWallCount(Player::BLUE), 10);
-    CHECK_EQ(game.GetRemainWallCount(Player::RED), 10);
+    game.Play(Actions::Move(Actions::Move::Direction::DOWN), Player::RED);
+    CHECK_EQ(game.GetCurrentPlayer(), Player::BLUE);
 
-    const Point bluePosition(5, 9);
-    const Point redPosition(5, 1);
-    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), bluePosition);
-    CHECK_EQ(game.GetPlayerPosition(Player::RED), redPosition);
+    game.Play(Actions::Move(Actions::Move::Direction::UP), Player::BLUE);
+    CHECK_EQ(game.GetCurrentPlayer(), Player::RED);
 
-    std::cerr << game.ToString();
+    game.Play(Actions::Move(Actions::Move::Direction::UP), Player::BLUE);
+    CHECK_EQ(game.GetCurrentPlayer(), Player::RED);
+}
+
+TEST_CASE("[Game] Move tests")
+{
+    Game game;
+
+    CHECK_FALSE(game.IsValidAction(
+        Actions::Move(Actions::Move::Direction::DOWN), Player::BLUE));
+
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::UP)));
+    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(5, 8));
+    CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(5, 1));
+
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::DOWN)));
+    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(5, 8));
+    CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(5, 2));
+
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::UP)));
+    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(5, 7));
+    CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(5, 2));
+
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::DOWN)));
+    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(5, 7));
+    CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(5, 3));
+
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::UP)));
+    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(5, 6));
+    CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(5, 3));
+
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::DOWN)));
+    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(5, 6));
+    CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(5, 4));
+
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::UP)));
+    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(5, 5));
+    CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(5, 4));
+
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::DOWN)));
+    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(5, 5));
+    CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(5, 6));
+
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::LEFT)));
+    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(4, 5));
+    CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(5, 6));
+
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::RIGHT)));
+    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(4, 5));
+    CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(6, 6));
+
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::LEFT)));
+    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(3, 5));
+    CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(5, 6));
+
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::RIGHT)));
+    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(4, 5));
+    CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(7, 6));
+
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::LEFT)));
+    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(2, 5));
+    CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(7, 6));
+
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::RIGHT)));
+    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(2, 5));
+    CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(8, 6));
+
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::LEFT)));
+    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(1, 5));
+    CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(8, 6));
+
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::RIGHT)));
+    CHECK_EQ(game.GetPlayerPosition(Player::BLUE), Point(4, 5));
+    CHECK_EQ(game.GetPlayerPosition(Player::RED), Point(9, 6));
+
+    CHECK_FALSE(
+        game.IsValidAction(Actions::Move(Actions::Move::Direction::LEFT)));
+    CHECK_FALSE(game.IsValidAction(
+        Actions::Move(Actions::Move::Direction::RIGHT), Player::RED));
+}
+
+TEST_CASE("[Game] Move diagonal tests")
+{
+    Game game;
+
+    CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::L_UP)));
+    CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::R_UP)));
+    CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::L_DOWN)));
+    CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::R_UP)));
+
+    game.Play(Actions::Move(Actions::Move::Direction::UP));
+    game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+    game.Play(Actions::Move(Actions::Move::Direction::UP));
+    game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+    game.Play(Actions::Move(Actions::Move::Direction::UP));
+    game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+    game.Play(Actions::Move(Actions::Move::Direction::UP));
+
+    CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::L_UP)));
+    CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::R_UP)));
+    CHECK(game.IsValidAction(Actions::Move(Actions::Move::Direction::L_DOWN)));
+    CHECK(game.IsValidAction(Actions::Move(Actions::Move::Direction::R_DOWN)));
+}
+
+TEST_CASE("[Game] Place walls tests")
+{
+    Game game;
+
+    CHECK_NOTHROW(game.Play(Actions::PlaceHorizontalWall(Point(1, 5))));
+    CHECK_NOTHROW(game.Play(Actions::PlaceHorizontalWall(Point(3, 5))));
+    CHECK_NOTHROW(game.Play(Actions::PlaceHorizontalWall(Point(5, 5))));
+    CHECK_NOTHROW(game.Play(Actions::PlaceHorizontalWall(Point(7, 5))));
+    CHECK_NOTHROW(game.Play(Actions::PlaceVerticalWall(Point(7, 6))));
+    CHECK_NOTHROW(game.Play(Actions::PlaceVerticalWall(Point(2, 5))));
+    CHECK_THROWS(game.Play(Actions::PlaceVerticalWall(Point(7, 8))));
+}
+
+TEST_CASE("[Game] Move with wall tests")
+{
+    Game game;
+
+    CHECK_NOTHROW(game.Play(Actions::PlaceHorizontalWall(Point(1, 5))));
+    CHECK_NOTHROW(game.Play(Actions::PlaceHorizontalWall(Point(3, 5))));
+    CHECK_NOTHROW(game.Play(Actions::PlaceHorizontalWall(Point(5, 5))));
+    CHECK_NOTHROW(game.Play(Actions::PlaceHorizontalWall(Point(7, 5))));
+    CHECK_NOTHROW(game.Play(Actions::PlaceVerticalWall(Point(7, 6))));
+    CHECK_NOTHROW(game.Play(Actions::PlaceVerticalWall(Point(2, 5))));
+
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::UP), Player::BLUE));
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::UP), Player::BLUE));
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::UP), Player::BLUE));
+
+    CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::UP), Player::BLUE));
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::RIGHT), Player::BLUE));
+    CHECK_NOTHROW(game.Play(Actions::Move(Actions::Move::Direction::RIGHT), Player::BLUE));
+    CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::RIGHT), Player::BLUE));
+}
+
+TEST_CASE("[Game] Move diagonal with wall tests")
+{
+    Game game;
+
+    game.Play(Actions::Move(Actions::Move::Direction::UP));
+    game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+    game.Play(Actions::Move(Actions::Move::Direction::UP));
+    game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+    game.Play(Actions::Move(Actions::Move::Direction::UP));
+    game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+    game.Play(Actions::Move(Actions::Move::Direction::UP));
+
+    game.Play(Actions::PlaceVerticalWall(Point(4, 5)));
+    CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::L_UP)));
+    CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::R_UP)));
+    CHECK(game.IsValidAction(Actions::Move(Actions::Move::Direction::UP)));
+
+    game.Play(Actions::PlaceHorizontalWall(Point(4, 3)));
+    CHECK(game.IsValidAction(Actions::Move(Actions::Move::Direction::L_UP)));
+    CHECK(game.IsValidAction(Actions::Move(Actions::Move::Direction::R_UP)));
+    CHECK_FALSE(game.IsValidAction(Actions::Move(Actions::Move::Direction::UP)));
+}
+
+TEST_CASE("[Game] Rotate tests")
+{
+    Game game;
+
+    game.Play(Actions::Move(Actions::Move::Direction::UP), Player::BLUE);
+    game.Play(Actions::Move(Actions::Move::Direction::UP), Player::BLUE);
+    game.Play(Actions::Move(Actions::Move::Direction::RIGHT), Player::BLUE);
+    game.Play(Actions::Move(Actions::Move::Direction::RIGHT), Player::BLUE);
+    game.Play(Actions::Move(Actions::Move::Direction::RIGHT), Player::BLUE);
+
+    game.Play(Actions::PlaceVerticalWall(Point(5, 6)));
+    game.Play(Actions::PlaceVerticalWall(Point(7, 6)));
+    game.Play(Actions::PlaceHorizontalWall(Point(6, 7)));
+
+    CHECK_FALSE(game.IsValidAction(Actions::Rotate(Point(6, 6))));
+    CHECK_NOTHROW(game.Play(Actions::Rotate(Point(5, 6))));
+}
+
+TEST_CASE("[Game] Winner tests")
+{
+    {
+        Game game;
+
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::RED);
+    }
+
+    {
+        Game game;
+
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::BLUE);
+    }
+
+    {
+        Game game(true);
+
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::RED);
+    }
+
+    {
+        Game game(true);
+
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::UP));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::NONE);
+        game.Play(Actions::Move(Actions::Move::Direction::DOWN));
+        CHECK_EQ(game.GetWinner(), Player::BLUE);
+    }
 }
