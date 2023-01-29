@@ -2,6 +2,7 @@
 
 #include <array>
 #include <string>
+#include <vector>
 
 #include <search/Game/Environment.hpp>
 
@@ -20,13 +21,14 @@ class NNBase
  public:
     virtual ~NNBase() noexcept = default;
 
-    virtual bool Initialize(const std::string& path) = 0;
+    virtual void Initialize(int rank, const std::string& path) = 0;
     virtual void Shutdown() = 0;
 
-    NNOutput Predict(const Game::Environment& env);
+    std::vector<NNOutput> Predict(const std::vector<Game::Environment>& env);
 
  private:
-    virtual void predictImpl(const Game::Environment& env, PolicyVal& pol,
-                             float& val) = 0;
+    virtual void predictImpl(const std::vector<Game::Environment>& env,
+                             std::vector<PolicyVal>& pol,
+                             std::vector<float>& val) = 0;
 };
 }  // namespace search::NN

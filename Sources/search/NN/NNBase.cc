@@ -2,12 +2,22 @@
 
 namespace search::NN
 {
-NNOutput NNBase::Predict(const Game::Environment& env)
+std::vector<NNOutput> NNBase::Predict(const std::vector<Game::Environment>& env)
 {
-    NNOutput result;
+    const int batchSize = env.size();
 
-    predictImpl(env, result.policy, result.value);
+    std::vector<NNOutput> result(batchSize);
+
+    std::vector<PolicyVal> policies(batchSize);
+    std::vector<float> values(batchSize);
+    predictImpl(env, policies, values);
+
+    for (int batchID = 0; batchID < batchSize; ++batchID)
+    {
+        result[batchID].policy = std::move(policies[batchID]);
+        result[batchID].value = values[batchID];
+    }
 
     return result;
 }
-}
+}  // namespace search::NN

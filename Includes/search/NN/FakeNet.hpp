@@ -6,6 +6,13 @@ namespace search::NN
 {
 class FakeNet : public NNBase
 {
-    void predictImpl(const Game::Environment& env, PolicyVal& pol, float& val) override;
+ public:
+    void Initialize(int rank, const std::string& filename) override;
+    void Shutdown() override;
+
+ private:
+    void predictImpl(const std::vector<Game::Environment>& env,
+                     std::vector<PolicyVal>& pol,
+                     std::vector<float>& val) override;
 };
-}
+}  // namespace search::NN
