@@ -457,7 +457,6 @@ TEST_CASE("[Game] Place walls tests")
     CHECK_NOTHROW(game.Play(Actions::PlaceHorizontalWall(Point(5, 5))));
     CHECK_NOTHROW(game.Play(Actions::PlaceHorizontalWall(Point(7, 5))));
     CHECK_NOTHROW(game.Play(Actions::PlaceVerticalWall(Point(7, 6))));
-    std::cerr << game.ToString();
     CHECK_NOTHROW(game.Play(Actions::PlaceVerticalWall(Point(2, 5))));
     CHECK_THROWS(game.Play(Actions::PlaceVerticalWall(Point(7, 8))));
 }
