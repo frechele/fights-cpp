@@ -5,18 +5,30 @@
 #include <fights/Action.hpp>
 #include <fights/Game.hpp>
 
-namespace search
+namespace search::Game
 {
+struct Action final
+{
+   Action() = default;
+   Action(int _id, fights::Action* _action);
+
+   int id;
+   fights::Action* action;
+};
+
 class Environment : public fights::Game
 {
+ public:
+   static constexpr int ACTION_SPACE_SIZE = 172;
+
  public:
     Environment();
     ~Environment() noexcept;
 
-    std::vector<fights::Action*> GetActionSpace() const;
-    std::vector<fights::Action*> GetValidActions() const;
+    const std::vector<Action>& GetActionSpace() const;
+    std::vector<Action> GetValidActions() const;
 
  private:
-    std::vector<fights::Action*> actionSpace_;
+    std::vector<Action> actionSpace_;
 };
-}  // namespace search
+}  // namespace search::Game
