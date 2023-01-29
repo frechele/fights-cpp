@@ -14,5 +14,7 @@ file(GLOB_RECURSE headers
 file(GLOB_RECURSE sources 
     ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
 
+find_package(Threads REQUIRED)
+
 add_executable(${target} ${headers} ${sources})
-target_link_libraries(${target} fights search)
+target_link_libraries(${target} fights search Threads::Threads)
