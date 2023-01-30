@@ -20,7 +20,7 @@ class Game
 
  private:
     search::Search::MCTS player1_;
-    // search::Search::MCTS player2_;
+    search::Search::MCTS player2_;
 
     std::vector<search::NN::Tensor> states_;
     std::vector<search::NN::PolicyVal> pis_;

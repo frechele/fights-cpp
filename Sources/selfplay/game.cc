@@ -1,13 +1,13 @@
 #include <selfplay/game.hpp>
 
 #include <cstdio>
-#include <numeric>
 #include <iostream>
+#include <numeric>
 
 namespace selfplay
 {
 Game::Game(const search::Config& config)
-    : player1_(config)//, player2_(config)
+    : player1_(config), player2_(config)
 {
 }
 
@@ -19,8 +19,8 @@ void Game::RunSingleGame()
     {
         const int turnID = env.GetTurns();
 
-        search::Search::MCTS& currentPla = player1_;
-            //(turnID % 2 == 1) ? player1_ : player2_;
+        search::Search::MCTS& currentPla =
+            (turnID % 2 == 1) ? player1_ : player2_;
         currentPla.DoSearchWithMaxSimulation();
 
         const auto bestAction = currentPla.GetBestAction();
@@ -43,7 +43,7 @@ void Game::RunSingleGame()
         // promote turn
         env.Play(*bestAction.action);
         player1_.Play(bestAction);
-        // player2_.Play(bestAction);
+        player2_.Play(bestAction);
     }
 
     const int blueZ = (env.GetWinner() == fights::Player::BLUE) ? 1 : -1;
