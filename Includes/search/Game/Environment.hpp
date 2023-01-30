@@ -12,7 +12,7 @@ struct Action final
    Action() = default;
    Action(int _id, fights::Action* _action);
 
-   int id;
+   int id{ -1 };  // -1 means invalid action
    fights::Action* action;
 };
 
