@@ -1,13 +1,52 @@
 #include <selfplay/game.hpp>
 
+#include <uuid/uuid.h>
+#include <array>
 #include <cstdio>
+#include <iomanip>
 #include <iostream>
 #include <numeric>
+#include <sstream>
 
 namespace selfplay
 {
-Game::Game(const search::Config& config)
-    : player1_(config), player2_(config)
+std::string Game::GenerateRandomGameID()
+{
+    std::array<unsigned char, 16> uuid;
+    uuid_generate_random(uuid.data());
+
+    std::stringstream ss;
+
+    const auto print = [&ss](unsigned char val) {
+        ss << std::setfill('0') << std::setw(2) << std::hex
+           << static_cast<unsigned int>(val);
+    };
+
+    print(uuid[0]);
+    print(uuid[1]);
+    print(uuid[2]);
+    print(uuid[3]);
+    ss << '-';
+    print(uuid[4]);
+    print(uuid[5]);
+    ss << '-';
+    print(uuid[6]);
+    print(uuid[7]);
+    ss << '-';
+    print(uuid[8]);
+    print(uuid[9]);
+    ss << '-';
+    print(uuid[10]);
+    print(uuid[11]);
+    print(uuid[12]);
+    print(uuid[13]);
+    print(uuid[14]);
+    print(uuid[15]);
+
+    return ss.str();
+}
+
+Game::Game(const search::Config& config) : player1_(config), player2_(config)
 {
 }
 

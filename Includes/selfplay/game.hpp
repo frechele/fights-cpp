@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 
 #include <search/Game/Environment.hpp>
 #include <search/NN/NNBase.hpp>
@@ -11,6 +12,9 @@ namespace selfplay
 {
 class Game
 {
+ public:
+   static std::string GenerateRandomGameID();
+
  public:
     Game(const search::Config& config);
 

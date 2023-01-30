@@ -16,5 +16,9 @@ file(GLOB_RECURSE sources
 
 find_package(Threads REQUIRED)
 
+find_path(LIBUUID_INCLUDE_DIR uuid.h PATH_SUFFIXES uuid)
+find_library(LIBUUID_LIBRARY libuuid.a)
+
 add_executable(${target} ${headers} ${sources})
-target_link_libraries(${target} fights search Threads::Threads)
+include_directories(${LIBUUID_INCLUDE_DIR})
+target_link_libraries(${target} fights search Threads::Threads ${LIBUUID_LIBRARY})
