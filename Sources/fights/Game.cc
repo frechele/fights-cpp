@@ -535,6 +535,12 @@ void Game::Play(const Action& action, Player player)
     }
 
     player_ = PlayerUtils::Opponent(player);
+    ++turns_;
+}
+
+int Game::GetTurns() const
+{
+    return turns_;
 }
 
 bool Game::isValidMove(const Actions::Move& action, Player player) const

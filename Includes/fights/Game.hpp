@@ -113,6 +113,9 @@ class Game
     //! \param player if Player::NONE, use the current player color
     void Play(const Action& action, Player player = Player::NONE);
 
+    //! Returns current turn number
+    int GetTurns() const;
+
  private:
     bool isValidMove(const Actions::Move& action, Player player) const;
     bool isValidPlaceHorizontalWall(const Actions::PlaceHorizontalWall& action,
@@ -132,6 +135,7 @@ class Game
     int& getRemainWallCount(Player player);
 
  private:
+    int turns_{ 1 };
     std::array<Point, 2> playerPositions_;
     std::array<int, 2> playerTargets_;
     std::array<int, 2> remainWallCounts_{ INITIAL_WALL_COUNT_PER_PLAYER,

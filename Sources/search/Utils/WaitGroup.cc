@@ -24,6 +24,10 @@ void WaitGroup::add(int val)
     std::scoped_lock lock(mutex_);
 
     counter_ += val;
+
+    if (counter_ < 0)
+        counter_ = 0;
+
     if (counter_ == 0)
         cv_.notify_all();
 }
