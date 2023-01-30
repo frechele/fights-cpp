@@ -42,15 +42,14 @@ MCTSNode* MCTSNode::Select(const Config& config) const
     float maxValue = -std::numeric_limits<float>::max();
     MCTSNode* bestNode = nullptr;
 
-    for (MCTSNode* tempNowNode = mostLeftChildNode; tempNowNode != nullptr;
-         tempNowNode = tempNowNode->rightSiblingNode)
-    {
+    ForEachChild([&maxValue, &bestNode, &config, totalParentVisits,
+                  this](MCTSNode* child) {
         float Q;
         // calcuate Q-value
         {
-            const float v = tempNowNode->visits;
-            const float w = tempNowNode->values;
-            const float vl = tempNowNode->virtualLoss;
+            const float v = child->visits;
+            const float w = child->values;
+            const float vl = child->virtualLoss;
 
             Q = (w - vl - 1.f) / (v + vl + 1.f);
         }
@@ -58,8 +57,8 @@ MCTSNode* MCTSNode::Select(const Config& config) const
         float u;
         // calculate u-value
         {
-            const float p = tempNowNode->policy;
-            const float v = tempNowNode->visits;
+            const float p = child->policy;
+            const float v = child->visits;
 
             u = config.search.cPUCT * p * std::sqrt(totalParentVisits) /
                 (1.f + v);
@@ -70,9 +69,9 @@ MCTSNode* MCTSNode::Select(const Config& config) const
         if (maxValue < value)
         {
             maxValue = value;
-            bestNode = tempNowNode;
+            bestNode = child;
         }
-    }
+    });
 
     assert(bestNode != nullptr);
     return bestNode;

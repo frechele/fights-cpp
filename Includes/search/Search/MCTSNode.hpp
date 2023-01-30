@@ -39,5 +39,27 @@ struct MCTSNode final
     MCTSNode* Select(const Config& config) const;
     void Expand(const Config& config, const Game::Environment& env,
                 const NN::NNOutput& nnOutput);
+
+    template <typename Func>
+    void ForEachChild(Func&& f);
+
+    template <typename Func>
+    void ForEachChild(Func&& f) const;
 };
+
+template <typename Func>
+void MCTSNode::ForEachChild(Func&& f)
+{
+    for (MCTSNode* tempNowNode = mostLeftChildNode; tempNowNode != nullptr;
+         tempNowNode = tempNowNode->rightSiblingNode)
+        f(tempNowNode);
+}
+
+template <typename Func>
+void MCTSNode::ForEachChild(Func&& f) const
+{
+    for (MCTSNode* tempNowNode = mostLeftChildNode;
+         tempNowNode != nullptr; tempNowNode = tempNowNode->rightSiblingNode)
+        f(tempNowNode);
+}
 }  // namespace search::Search
