@@ -366,6 +366,14 @@ Player Game::GetWinner() const
     return Player::NONE;
 }
 
+bool Game::IsEnd() const
+{
+    if (GetTurns() > 100)
+        return true;
+
+    return GetWinner() != Player::NONE;
+}
+
 std::string Game::ToString() const
 {
     std::stringstream ss;
@@ -637,7 +645,7 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
                 currentPos.X() - 1, currentPos.Y()))  // left first case
         {
             if (currentPos.X() <= 2 || !wallBoard_.IsVerticalWallPlaced(
-                                          currentPos.X() - 2, currentPos.Y()))
+                                           currentPos.X() - 2, currentPos.Y()))
             {
                 return false;
             }
@@ -648,7 +656,7 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
                      currentPos.Y() - 1))  // up first case
         {
             if (currentPos.Y() <= 2 || !wallBoard_.IsHorizontalWallPlaced(
-                                          currentPos.X(), currentPos.Y() - 2))
+                                           currentPos.X(), currentPos.Y() - 2))
             {
                 return false;
             }
@@ -680,7 +688,7 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
                      currentPos.Y() - 1))  // up first case
         {
             if (currentPos.Y() <= 2 || !wallBoard_.IsHorizontalWallPlaced(
-                                          currentPos.X(), currentPos.Y() - 2))
+                                           currentPos.X(), currentPos.Y() - 2))
             {
                 return false;
             }
@@ -700,7 +708,7 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
                 currentPos.X() - 1, currentPos.Y()))  // left first case
         {
             if (currentPos.X() <= 2 || !wallBoard_.IsVerticalWallPlaced(
-                                          currentPos.X() - 2, currentPos.Y()))
+                                           currentPos.X() - 2, currentPos.Y()))
             {
                 return false;
             }

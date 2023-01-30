@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include <search/Game/Environment.hpp>
+#include <search/NN/Preprocessor.hpp>
 
 namespace search::NN
 {
@@ -24,10 +24,10 @@ class NNBase
     virtual void Initialize(int rank, const std::string& path) = 0;
     virtual void Shutdown() = 0;
 
-    std::vector<NNOutput> Predict(const std::vector<Game::Environment>& env);
+    std::vector<NNOutput> Predict(const std::vector<Tensor>& state);
 
  private:
-    virtual void predictImpl(const std::vector<Game::Environment>& env,
+    virtual void predictImpl(const std::vector<Tensor>& state,
                              std::vector<PolicyVal>& pol,
                              std::vector<float>& val) = 0;
 };

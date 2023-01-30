@@ -11,13 +11,14 @@
 #include <search/Config.hpp>
 #include <search/Game/Environment.hpp>
 #include <search/NN/NNBase.hpp>
+#include <search/NN/Preprocessor.hpp>
 #include <search/Utils/WaitGroup.hpp>
 
 namespace search::NN
 {
 struct Task final
 {
-    Game::Environment env;
+    Tensor state;
     std::promise<NNOutput> eval;
 };
 
@@ -45,7 +46,6 @@ class NNManager final
     std::vector<std::thread> workers_;
 
     std::mutex mutex_;
-    std::condition_variable cv_;
     std::deque<Task> taskQueue_;
 
     Utils::WaitGroup wg_;

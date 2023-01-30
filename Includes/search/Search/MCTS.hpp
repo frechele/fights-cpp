@@ -36,7 +36,7 @@ struct SimulationResult final
 class MCTS final
 {
  public:
-    MCTS(Config config, Game::Environment env);
+    MCTS(Config config);
     ~MCTS() noexcept;
 
     void DoSearchWithMaxSimulation();

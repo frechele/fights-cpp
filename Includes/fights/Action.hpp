@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include <fights/Common.hpp>
 
 namespace fights
@@ -18,6 +20,8 @@ class Action
     virtual ~Action() noexcept = default;
 
     virtual ActionType GetType() const = 0;
+
+    virtual std::string ToString() const = 0;
 };
 
 namespace Actions
@@ -44,6 +48,8 @@ class Move : public Action
 
     ActionType GetType() const override;
 
+    std::string ToString() const override;
+
     Direction GetDirection() const;
 
  private:
@@ -56,6 +62,8 @@ class PlaceHorizontalWall : public Action
     PlaceHorizontalWall(Point pt);
 
     ActionType GetType() const override;
+
+    std::string ToString() const override;
 
     Point GetPosition() const;
 
@@ -70,6 +78,8 @@ class PlaceVerticalWall : public Action
 
     ActionType GetType() const override;
 
+    std::string ToString() const override;
+
     Point GetPosition() const;
 
  private:
@@ -82,6 +92,8 @@ class Rotate : public Action
     Rotate(Point pt);
 
     ActionType GetType() const override;
+
+    std::string ToString() const override;
 
     Point GetPosition() const;
 

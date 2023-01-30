@@ -2,15 +2,15 @@
 
 namespace search::NN
 {
-std::vector<NNOutput> NNBase::Predict(const std::vector<Game::Environment>& env)
+std::vector<NNOutput> NNBase::Predict(const std::vector<Tensor>& state)
 {
-    const int batchSize = env.size();
+    const int batchSize = state.size();
 
     std::vector<NNOutput> result(batchSize);
 
     std::vector<PolicyVal> policies(batchSize);
     std::vector<float> values(batchSize);
-    predictImpl(env, policies, values);
+    predictImpl(state, policies, values);
 
     for (int batchID = 0; batchID < batchSize; ++batchID)
     {

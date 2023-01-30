@@ -11,7 +11,7 @@ class FakeNet : public NNBase
     void Shutdown() override;
 
  private:
-    void predictImpl(const std::vector<Game::Environment>& env,
+    void predictImpl(const std::vector<Tensor>& state,
                      std::vector<PolicyVal>& pol,
                      std::vector<float>& val) override;
 };

@@ -101,6 +101,9 @@ class Game
     //! Returns the winner
     Player GetWinner() const;
 
+    //! Returns wheter the game is end or not
+    bool IsEnd() const;
+
     //! Visualize the game state
     std::string ToString() const;
 

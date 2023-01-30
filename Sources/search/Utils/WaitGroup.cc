@@ -31,4 +31,4 @@ void WaitGroup::add(int val)
     if (counter_ == 0)
         cv_.notify_all();
 }
-}
+}  // namespace search::Utils

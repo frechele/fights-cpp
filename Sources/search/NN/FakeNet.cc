@@ -12,11 +12,11 @@ void FakeNet::Shutdown()
 {
 }
 
-void FakeNet::predictImpl(const std::vector<Game::Environment>& env,
+void FakeNet::predictImpl(const std::vector<Tensor>& state,
                           std::vector<PolicyVal>& pols,
                           std::vector<float>& vals)
 {
-    const int batchSize = env.size();
+    const int batchSize = state.size();
 
     using Random = effolkronium::random_thread_local;
 

@@ -7,6 +7,8 @@
 #include <limits>
 #include <random>
 
+#include <iostream>
+
 #include <search/NN/NNManager.hpp>
 #include <search/Utils/Utils.hpp>
 
@@ -35,8 +37,8 @@ SimulationResult SimulationResult::FromGameResult(fights::Player winner)
     return res;
 }
 
-MCTS::MCTS(Config config, Game::Environment env)
-    : config_(config), mainEnv_(std::move(env))
+MCTS::MCTS(Config config)
+    : config_(config)
 {
     workers_.resize(config_.search.NumWorkers);
     for (int rank = 0; rank < config_.search.NumWorkers; ++rank)
@@ -47,6 +49,8 @@ MCTS::MCTS(Config config, Game::Environment env)
     waitAllSearchStopped();
 
     deleteWorker_ = std::thread(&MCTS::deleteThread, this);
+
+    updateRoot(nullptr);
 }
 
 MCTS::~MCTS() noexcept
@@ -54,8 +58,8 @@ MCTS::~MCTS() noexcept
     {
         std::scoped_lock lock(mutex_);
         status_ = MCTSStatus::SHUTDOWN;
-        cv_.notify_all();
     }
+    cv_.notify_all();
 
     for (auto& worker : workers_)
         if (worker.joinable())
@@ -71,18 +75,27 @@ MCTS::~MCTS() noexcept
 
 void MCTS::DoSearchWithMaxSimulation()
 {
-    startSearch();
+    // waitAllSearchStopped();
+    // startSearch();
+
+    initRoot();
+    numSimulations_ = 0;
 
     while (numSimulations_.load() < config_.search.MaxSimulation)
+    {
+        Game::Environment env(mainEnv_);
+        simulation(env, root_);
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
 
-    stopSearch();
+    // stopSearch();
+
+    std::cout << "DONE SIMULATION " << numSimulations_.load() << std::endl;
 }
 
 void MCTS::Play(Game::Action action)
 {
     stopSearch();
-    waitAllSearchStopped();
 
     mainEnv_.Play(*action.action);
 
@@ -105,7 +118,7 @@ Game::Action MCTS::GetBestAction() const
     root_->ForEachChild([&bestVisits, &bestNode](MCTSNode* child) {
         const std::uint64_t visits = child->visits;
 
-        if (visits > bestVisits)
+        if (visits >= bestVisits)
         {
             bestVisits = visits;
             bestNode = child;
@@ -125,10 +138,12 @@ void MCTS::workerThread()
 {
     while (true)
     {
-        std::unique_lock lock(mutex_);
-        if (status_ != MCTSStatus::SEARCHING)
-            wg_.Done();
-        cv_.wait(lock, [&] { return status_ != MCTSStatus::IDLE; });
+        {
+            std::unique_lock lock(mutex_);
+            if (status_ != MCTSStatus::SEARCHING)
+                wg_.Done();
+            cv_.wait(lock, [&] { return status_ != MCTSStatus::IDLE; });
+        }
 
         if (status_ == MCTSStatus::SHUTDOWN)
         {
@@ -165,24 +180,29 @@ void MCTS::deleteThread()
 
 void MCTS::startSearch()
 {
+    waitAllSearchStopped();
+
     if (status_ != MCTSStatus::IDLE)
         return;
 
-    std::scoped_lock lock(mutex_);
-
-    numSimulations_ = 0;
     initRoot();
 
-    status_ = MCTSStatus::SEARCHING;
+    {
+        std::scoped_lock lock(mutex_);
+
+        numSimulations_ = 0;
+
+        status_ = MCTSStatus::SEARCHING;
+    }
     cv_.notify_all();
 }
 
 void MCTS::stopSearch()
 {
-    status_ = MCTSStatus::IDLE;
-
     for (int i = 0; i < config_.search.NumWorkers; ++i)
         wg_.Add();
+
+    status_ = MCTSStatus::IDLE;
 }
 
 void MCTS::waitAllSearchStopped()
@@ -240,7 +260,7 @@ void MCTS::initRoot()
         }
 
         const float noiseSum =
-            std::accumulate(begin(noise), end(noise) + root_->numChildren,
+            std::accumulate(begin(noise), begin(noise) + root_->numChildren,
                             std::numeric_limits<float>::epsilon());
 
         float policySum = std::numeric_limits<float>::epsilon();
@@ -267,6 +287,7 @@ void MCTS::enqDeleteNode(MCTSNode* node)
 
 void MCTS::deleteNode(MCTSNode* node)
 {
+    /*
     node->ForEachChild([this](MCTSNode* child) { deleteNode(child); });
 
     MCTSNode* tempNowNode = node->mostLeftChildNode;
@@ -280,22 +301,27 @@ void MCTS::deleteNode(MCTSNode* node)
     }
 
     node->mostLeftChildNode = nullptr;
+    */
 }
 
 void MCTS::simulation(Game::Environment& env, MCTSNode* node)
 {
+    /*
     while (node->state == ExpandState::EXPANDED)
     {
-        MCTSNode* bestNode = node->Select(config_);
+        node = node->Select(config_);
 
         env.Play(*node->action.action, node->player);
         Utils::AtomicAdd(node->virtualLoss, config_.search.VirtualLoss);
     }
 
+    if (node->state == ExpandState::EXPANDING)
+        return;
+
     const auto winner = env.GetWinner();
 
     SimulationResult result;
-    if (winner != fights::Player::NONE || env.GetTurns() > 50)  // game is ended
+    if (env.IsEnd())
     {
         result = SimulationResult::FromGameResult(winner);
     }
@@ -320,6 +346,7 @@ void MCTS::simulation(Game::Environment& env, MCTSNode* node)
 
         node = node->parentNode;
     }
+    */
 
     ++numSimulations_;
 }

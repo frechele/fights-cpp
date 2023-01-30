@@ -29,11 +29,7 @@ NNManager::NNManager(Config config) : config_(std::move(config))
 
 NNManager::~NNManager() noexcept
 {
-    {
-        std::scoped_lock lock(mutex_);
-        running_ = false;
-        cv_.notify_all();
-    }
+    running_ = false;
 
     for (auto& worker : workers_)
         if (worker.joinable())
@@ -42,17 +38,14 @@ NNManager::~NNManager() noexcept
 
 NNOutput NNManager::Predict(const Game::Environment& env)
 {
-    std::future<NNOutput> outputFuture;
+    Task task;
+    task.state = EnvToState(env);
+    auto outputFuture = task.eval.get_future();
 
     {
         std::scoped_lock lock(mutex_);
 
-        Task task;
-        task.env = env;
-
-        outputFuture = task.eval.get_future();
         taskQueue_.emplace_back(std::move(task));
-        cv_.notify_one();
     }
 
     return outputFuture.get();
@@ -72,37 +65,40 @@ void NNManager::workerThread(int rank)
 
     while (true)
     {
-        std::unique_lock lock(mutex_);
-
-        cv_.wait(lock, [&] { return !running_ || !taskQueue_.empty(); });
-        if (!running_ && taskQueue_.empty())
+        int batchSize;
+        std::vector<Tensor> states;
+        std::vector<std::promise<NNOutput>> results;
         {
-            break;
-        }
+            std::scoped_lock lock(mutex_);
 
-        const int batchSize =
-            std::min<int>(config_.nn.MaxBatch, taskQueue_.size());
+            if (!running_ && taskQueue_.empty())
+            {
+                break;
+            }
 
-        std::vector<Task> buffer(batchSize);
-        for (int batchID = 0; batchID < batchSize; ++batchID)
-        {
-            buffer[batchID] = std::move(taskQueue_.front());
-            taskQueue_.pop_front();
-        }
+            if (taskQueue_.empty())
+            {
+                continue;
+            }
 
-        lock.unlock();
+            batchSize =
+                std::min<int>(config_.nn.MaxBatch, taskQueue_.size());
 
-        std::vector<Game::Environment> states(batchSize);
-        for (int batchID = 0; batchID < batchSize; ++batchID)
-        {
-            states[batchID] = std::move(buffer[batchID].env);
+            for (int batchID = 0; batchID < batchSize; ++batchID)
+            {
+                Task task = std::move(taskQueue_.front());
+                taskQueue_.pop_front();
+
+                states.emplace_back(std::move(task.state));
+                results.emplace_back(std::move(task.eval));
+            }
         }
 
         auto outputs = network->Predict(states);
 
         for (int batchID = 0; batchID < batchSize; ++batchID)
         {
-            buffer[batchID].eval.set_value(std::move(outputs[batchID]));
+            results[batchID].set_value(std::move(outputs[batchID]));
         }
     }
 
