@@ -37,8 +37,7 @@ SimulationResult SimulationResult::FromGameResult(fights::Player winner)
     return res;
 }
 
-MCTS::MCTS(Config config)
-    : config_(config)
+MCTS::MCTS(Config config) : config_(config)
 {
     workers_.resize(config_.search.NumWorkers);
     for (int rank = 0; rank < config_.search.NumWorkers; ++rank)
@@ -69,28 +68,20 @@ MCTS::~MCTS() noexcept
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     runningDeleteWorker_ = false;
+    cv_.notify_all();
     if (deleteWorker_.joinable())
         deleteWorker_.join();
 }
 
 void MCTS::DoSearchWithMaxSimulation()
 {
-    // waitAllSearchStopped();
-    // startSearch();
-
-    initRoot();
-    numSimulations_ = 0;
+    waitAllSearchStopped();
+    startSearch();
 
     while (numSimulations_.load() < config_.search.MaxSimulation)
-    {
-        Game::Environment env(mainEnv_);
-        simulation(env, root_);
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
 
-    // stopSearch();
-
-    std::cout << "DONE SIMULATION " << numSimulations_.load() << std::endl;
+    stopSearch();
 }
 
 void MCTS::Play(Game::Action action)
@@ -287,7 +278,6 @@ void MCTS::enqDeleteNode(MCTSNode* node)
 
 void MCTS::deleteNode(MCTSNode* node)
 {
-    /*
     node->ForEachChild([this](MCTSNode* child) { deleteNode(child); });
 
     MCTSNode* tempNowNode = node->mostLeftChildNode;
@@ -301,12 +291,10 @@ void MCTS::deleteNode(MCTSNode* node)
     }
 
     node->mostLeftChildNode = nullptr;
-    */
 }
 
 void MCTS::simulation(Game::Environment& env, MCTSNode* node)
 {
-    /*
     while (node->state == ExpandState::EXPANDED)
     {
         node = node->Select(config_);
@@ -346,7 +334,6 @@ void MCTS::simulation(Game::Environment& env, MCTSNode* node)
 
         node = node->parentNode;
     }
-    */
 
     ++numSimulations_;
 }

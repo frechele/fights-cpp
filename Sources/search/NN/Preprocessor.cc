@@ -17,13 +17,15 @@ Tensor EnvToState(const Game::Environment& env)
     const auto currentPla = env.GetCurrentPlayer();
     const auto opponentPla = env.GetOpponentPlayer();
 
-    // player position ([0] for current, [1] for opponent)
+    int chan = 0;
+    // player position
     const auto currentPos = env.GetPlayerPosition(currentPla);
     const auto opponentPos = env.GetPlayerPosition(opponentPla);
-    ret[idx(0, currentPos.X(), currentPos.Y())] = 1;
-    ret[idx(1, opponentPos.X(), opponentPos.Y())] = 1;
+    ret[idx(chan, currentPos.X(), currentPos.Y())] = 1;
+    ret[idx(chan + 1, opponentPos.X(), opponentPos.Y())] = 1;
+    chan += 2;
 
-    // wall positions ([2] for horizontal, [3] for vertical)
+    // wall positions
     for (int y = 1; y <= fights::BOARD_SIZE; ++y)
     {
         for (int x = 1; x <= fights::BOARD_SIZE; ++x)
@@ -31,30 +33,39 @@ Tensor EnvToState(const Game::Environment& env)
             const fights::Point pt(x, y);
 
             if (env.IsHorizontalWallPlaced(pt))
-                ret[idx(2, x, y)] = 1;
+                ret[idx(chan, x, y)] = 1;
 
             if (env.IsVerticalWallPlaced(pt))
-                ret[idx(3, x, y)] = 1;
+                ret[idx(chan + 1, x, y)] = 1;
         }
     }
+    chan += 2;
 
     // remaining wall counts ([4-14] for current, [15-25] for opponent)
     const auto currentWalls = env.GetRemainWallCount(currentPla) - 1;
     const auto opponentWalls = env.GetRemainWallCount(opponentPla) - 1;
     if (currentWalls >= 0)
     {
-        std::fill(begin(ret) + idx(4 + currentWalls, 1, 1),
-                  begin(ret) + idx(5 + currentWalls, 1, 1), 1);
+        std::fill(begin(ret) + idx(chan + currentWalls, 1, 1),
+                  begin(ret) + idx(chan + 1 + currentWalls, 1, 1), 1);
     }
     if (opponentWalls >= 0)
     {
-        std::fill(begin(ret) + idx(15 + opponentWalls, 1, 1),
-                  begin(ret) + idx(16 + opponentWalls, 1, 1), 1);
+        std::fill(
+            begin(ret) + idx(chan + fights::INITIAL_WALL_COUNT_PER_PLAYER +
+                                 opponentWalls,
+                             1, 1),
+            begin(ret) + idx(chan + fights::INITIAL_WALL_COUNT_PER_PLAYER + 1 +
+                                 opponentWalls,
+                             1, 1),
+            1);
     }
+    chan += 2 * fights::INITIAL_WALL_COUNT_PER_PLAYER;
 
     // color ([26])
-    std::fill(begin(ret) + idx(26, 1, 1), begin(ret) + idx(27, 1, 1),
+    std::fill(begin(ret) + idx(chan, 1, 1), begin(ret) + idx(chan + 1, 1, 1),
               currentPla == fights::Player::BLUE);
+    chan += 1;
 
     return ret;
 }

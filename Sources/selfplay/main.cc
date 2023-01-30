@@ -7,7 +7,6 @@
 int main()
 {
     search::Config config;
-    config.search.NumWorkers = 0;
 
     search::NN::NNManager manager(config);
 

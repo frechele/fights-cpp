@@ -18,7 +18,6 @@ void Game::RunSingleGame()
     while (!env.IsEnd())
     {
         const int turnID = env.GetTurns();
-        std::cout << "Turn: " << turnID << std::endl;
 
         search::Search::MCTS& currentPla = player1_;
             //(turnID % 2 == 1) ? player1_ : player2_;
