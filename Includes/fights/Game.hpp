@@ -2,6 +2,7 @@
 
 #include <array>
 #include <string>
+#include <vector>
 
 #include <fights/Action.hpp>
 #include <fights/Common.hpp>
@@ -119,6 +120,9 @@ class Game
     //! Returns current turn number
     int GetTurns() const;
 
+    //! Returns the action history
+    const std::vector<Action*> GetHistory() const;
+
  private:
     bool isValidMove(const Actions::Move& action, Player player) const;
     bool isValidPlaceHorizontalWall(const Actions::PlaceHorizontalWall& action,
@@ -143,6 +147,7 @@ class Game
     std::array<int, 2> playerTargets_;
     std::array<int, 2> remainWallCounts_{ INITIAL_WALL_COUNT_PER_PLAYER,
                                           INITIAL_WALL_COUNT_PER_PLAYER };
+    std::vector<Action*> history_;
 
     WallBoard wallBoard_;
 
