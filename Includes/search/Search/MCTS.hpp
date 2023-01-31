@@ -66,9 +66,7 @@ class MCTS final
 
     std::atomic<std::uint64_t> numSimulations_{ 0 };
 
-    std::deque<MCTSNode*> deleteQueue_;
-    std::condition_variable cv_;
-    std::mutex deleteMutex_;
+    std::atomic<MCTSNode*> deleteNodeHead_{ nullptr };
     std::thread deleteWorker_;
     bool runningDeleteWorker_{ true };
 };

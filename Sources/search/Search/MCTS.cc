@@ -63,11 +63,7 @@ MCTS::~MCTS() noexcept
     enqDeleteNode(root_);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    {
-        std::scoped_lock lock(deleteMutex_);
-        runningDeleteWorker_ = false;
-        cv_.notify_all();
-    }
+    runningDeleteWorker_ = false;
     if (deleteWorker_.joinable())
         deleteWorker_.join();
 }
@@ -151,21 +147,31 @@ void MCTS::deleteThread()
 {
     while (true)
     {
-        std::unique_lock lock(deleteMutex_);
-
-        cv_.wait(lock, [&] {
-            return !runningDeleteWorker_ || !deleteQueue_.empty();
-        });
-        if (!runningDeleteWorker_ && deleteQueue_.empty())
+        MCTSNode* nodes = deleteNodeHead_.load();
+        if (nodes == nullptr)
         {
-            break;
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+            if (!runningDeleteWorker_)
+            {
+                break;
+            }
+
+            continue;
         }
 
-        MCTSNode* nodeToDelete = deleteQueue_.front();
-        deleteQueue_.pop_front();
+        while (!deleteNodeHead_.compare_exchange_strong(nodes, nullptr))
+            ;
 
-        deleteNode(nodeToDelete);
-        delete nodeToDelete;
+        while (nodes != nullptr)
+        {
+            MCTSNode* nodeToDelete = nodes;
+            nodes = nodes->rightSiblingNode;
+            nodeToDelete->rightSiblingNode = nullptr;
+
+            deleteNode(nodeToDelete);
+            delete nodeToDelete;
+        }
     }
 }
 
@@ -261,8 +267,10 @@ void MCTS::initRoot()
 
 void MCTS::enqDeleteNode(MCTSNode* node)
 {
-    std::scoped_lock lock(deleteMutex_);
-    deleteQueue_.emplace_back(node);
+    node->rightSiblingNode = deleteNodeHead_.load();
+    while (
+        !deleteNodeHead_.compare_exchange_strong(node->rightSiblingNode, node))
+        ;
 }
 
 void MCTS::deleteNode(MCTSNode* node)
