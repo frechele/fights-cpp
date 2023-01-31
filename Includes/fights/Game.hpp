@@ -2,6 +2,7 @@
 
 #include <array>
 #include <string>
+#include <vector>
 
 #include <fights/Action.hpp>
 #include <fights/Common.hpp>
@@ -63,7 +64,7 @@ class WallBoard final
     std::array<bool, (BOARD_SIZE + 1) * (BOARD_SIZE + 1)> intersection_{ 0 };
 };
 
-class Game final
+class Game
 {
  public:
     Game(bool flipped = false);
@@ -72,6 +73,8 @@ class Game final
 
     Game& operator=(const Game&) = default;
     Game& operator=(Game&&) = default;
+
+    virtual ~Game() noexcept = default;
 
     //! Returns the color of current player
     Player GetCurrentPlayer() const;
@@ -99,6 +102,9 @@ class Game final
     //! Returns the winner
     Player GetWinner() const;
 
+    //! Returns wheter the game is end or not
+    bool IsEnd() const;
+
     //! Visualize the game state
     std::string ToString() const;
 
@@ -110,6 +116,12 @@ class Game final
     //! Play the game
     //! \param player if Player::NONE, use the current player color
     void Play(const Action& action, Player player = Player::NONE);
+
+    //! Returns current turn number
+    int GetTurns() const;
+
+    //! Returns the action history
+    const std::vector<Action*> GetHistory() const;
 
  private:
     bool isValidMove(const Actions::Move& action, Player player) const;
@@ -130,10 +142,12 @@ class Game final
     int& getRemainWallCount(Player player);
 
  private:
+    int turns_{ 1 };
     std::array<Point, 2> playerPositions_;
     std::array<int, 2> playerTargets_;
     std::array<int, 2> remainWallCounts_{ INITIAL_WALL_COUNT_PER_PLAYER,
                                           INITIAL_WALL_COUNT_PER_PLAYER };
+    std::vector<Action*> history_;
 
     WallBoard wallBoard_;
 
