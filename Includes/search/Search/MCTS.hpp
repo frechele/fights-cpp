@@ -10,18 +10,12 @@
 
 #include <search/Config.hpp>
 #include <search/Game/Environment.hpp>
+#include <search/Search/MCTSController.hpp>
 #include <search/Search/MCTSNode.hpp>
 #include <search/Utils/WaitGroup.hpp>
 
 namespace search::Search
 {
-enum class MCTSStatus
-{
-    IDLE,
-    SEARCHING,
-    SHUTDOWN
-};
-
 struct SimulationResult final
 {
     float value{ 0 };
@@ -50,9 +44,7 @@ class MCTS final
     void workerThread();
     void deleteThread();
 
-    void startSearch();
-    void stopSearch();
-    void waitAllSearchStopped();
+    void initSearch();
 
     void updateRoot(MCTSNode* newNode);
     void initRoot();
@@ -70,14 +62,12 @@ class MCTS final
 
     std::vector<std::thread> workers_;
 
-    std::condition_variable cv_;
-    std::mutex mutex_;
-    MCTSStatus status_{ MCTSStatus::IDLE };
-    Utils::WaitGroup wg_;
+    MCTSController controller_;
 
     std::atomic<std::uint64_t> numSimulations_{ 0 };
 
     std::deque<MCTSNode*> deleteQueue_;
+    std::condition_variable cv_;
     std::mutex deleteMutex_;
     std::thread deleteWorker_;
     bool runningDeleteWorker_{ true };

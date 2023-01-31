@@ -37,15 +37,16 @@ SimulationResult SimulationResult::FromGameResult(fights::Player winner)
     return res;
 }
 
-MCTS::MCTS(Config config) : config_(config)
+MCTS::MCTS(Config config) : config_(config), controller_(config)
 {
+    controller_.Pause();
+
     workers_.resize(config_.search.NumWorkers);
     for (int rank = 0; rank < config_.search.NumWorkers; ++rank)
     {
-        wg_.Add();
         workers_[rank] = std::thread(&MCTS::workerThread, this);
     }
-    waitAllSearchStopped();
+    controller_.WaitAllPaused();
 
     deleteWorker_ = std::thread(&MCTS::deleteThread, this);
 
@@ -54,12 +55,7 @@ MCTS::MCTS(Config config) : config_(config)
 
 MCTS::~MCTS() noexcept
 {
-    {
-        std::scoped_lock lock(mutex_);
-        status_ = MCTSStatus::SHUTDOWN;
-    }
-    cv_.notify_all();
-
+    controller_.Shutdown();
     for (auto& worker : workers_)
         if (worker.joinable())
             worker.join();
@@ -67,26 +63,30 @@ MCTS::~MCTS() noexcept
     enqDeleteNode(root_);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    runningDeleteWorker_ = false;
-    cv_.notify_all();
+    {
+        std::scoped_lock lock(deleteMutex_);
+        runningDeleteWorker_ = false;
+        cv_.notify_all();
+    }
     if (deleteWorker_.joinable())
         deleteWorker_.join();
 }
 
 void MCTS::DoSearchWithMaxSimulation()
 {
-    waitAllSearchStopped();
-    startSearch();
+    controller_.WaitAllPaused();
+    initSearch();
 
     while (numSimulations_.load() < config_.search.MaxSimulation)
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-    stopSearch();
+    controller_.Pause();
 }
 
 void MCTS::Play(Game::Action action)
 {
-    stopSearch();
+    controller_.Pause();
+    controller_.WaitAllPaused();
 
     mainEnv_.Play(*action.action);
 
@@ -129,14 +129,14 @@ void MCTS::workerThread()
 {
     while (true)
     {
+        if (controller_.GetState() == MCTSState::IDLE)
         {
-            std::unique_lock lock(mutex_);
-            if (status_ != MCTSStatus::SEARCHING)
-                wg_.Done();
-            cv_.wait(lock, [&] { return status_ != MCTSStatus::IDLE; });
+            controller_.AckPause();
+            controller_.WaitResume();
+            controller_.AckResume();
         }
 
-        if (status_ == MCTSStatus::SHUTDOWN)
+        if (controller_.GetState() == MCTSState::SHUTDOWN)
         {
             break;
         }
@@ -169,43 +169,18 @@ void MCTS::deleteThread()
     }
 }
 
-void MCTS::startSearch()
+void MCTS::initSearch()
 {
-    waitAllSearchStopped();
-
-    if (status_ != MCTSStatus::IDLE)
-        return;
-
+    numSimulations_ = 0;
     initRoot();
 
-    {
-        std::scoped_lock lock(mutex_);
-
-        numSimulations_ = 0;
-
-        status_ = MCTSStatus::SEARCHING;
-    }
-    cv_.notify_all();
-}
-
-void MCTS::stopSearch()
-{
-    for (int i = 0; i < config_.search.NumWorkers; ++i)
-        wg_.Add();
-
-    status_ = MCTSStatus::IDLE;
-}
-
-void MCTS::waitAllSearchStopped()
-{
-    assert(status_ == MCTSStatus::IDLE);
-
-    wg_.Done();
+    controller_.Resume();
+    controller_.WaitAllResumed();
 }
 
 void MCTS::updateRoot(MCTSNode* newNode)
 {
-    MCTSNode* node;
+    MCTSNode* node = new MCTSNode;
     if (newNode == nullptr)
     {
         node = new MCTSNode;
@@ -213,12 +188,26 @@ void MCTS::updateRoot(MCTSNode* newNode)
     }
     else
     {
-        node = new MCTSNode(std::move(*newNode));
+        node->state = newNode->state.load();
+        node->action = newNode->action;
+        node->player = newNode->player;
+        node->numChildren = newNode->numChildren;
+        node->policy = newNode->policy;
+        node->visits = newNode->visits.load();
+        node->values = newNode->values.load();
+        node->virtualLoss = newNode->virtualLoss.load();
+        node->parentNode = newNode->parentNode;
+        node->mostLeftChildNode = newNode->mostLeftChildNode;
+        node->rightSiblingNode = newNode->rightSiblingNode;
 
         node->ForEachChild(
             [node](MCTSNode* child) { child->parentNode = node; });
 
         node->parentNode = nullptr;
+
+        newNode->state = ExpandState::UNEXPANDED;
+        newNode->mostLeftChildNode = nullptr;
+        newNode->numChildren = 0;
     }
 
     if (root_ != nullptr)
@@ -297,7 +286,29 @@ void MCTS::simulation(Game::Environment& env, MCTSNode* node)
 {
     while (node->state == ExpandState::EXPANDED)
     {
-        node = node->Select(config_);
+        MCTSNode* tmpNode = node;
+        tmpNode = node->Select(config_);
+
+        if (tmpNode == nullptr)
+        {
+            std::cout << env.ToString() << std::endl;
+
+            for (auto act : env.GetHistory())
+            {
+                std::cout << act->ToString() << " ";
+            }
+            std::cout << std::endl;
+            std::cout << "AVAILS: " << env.GetValidActions().size() << " "
+                      << static_cast<int>(node->state.load()) << " "
+                      << node->numChildren << " " << node->mostLeftChildNode
+                      << std::endl;
+
+            node = nullptr;
+        }
+        else
+        {
+            node = tmpNode;
+        }
 
         env.Play(*node->action.action, node->player);
         Utils::AtomicAdd(node->virtualLoss, config_.search.VirtualLoss);

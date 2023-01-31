@@ -7,24 +7,6 @@
 
 namespace search::Search
 {
-MCTSNode::MCTSNode(MCTSNode&& other)
-    : state(other.state.load()),
-      action(other.action),
-      player(other.player),
-      numChildren(other.numChildren),
-      policy(other.policy),
-      visits(other.visits.load()),
-      values(other.values.load()),
-      virtualLoss(other.virtualLoss.load()),
-      parentNode(other.parentNode),
-      mostLeftChildNode(other.mostLeftChildNode),
-      rightSiblingNode(other.rightSiblingNode)
-{
-    other.state = ExpandState::UNEXPANDED;
-    other.mostLeftChildNode = nullptr;
-    other.numChildren = 0;
-}
-
 MCTSNode* MCTSNode::Select(const Config& config) const
 {
     while (state.load() == ExpandState::EXPANDING)
@@ -81,8 +63,7 @@ void MCTSNode::Expand(const Config& config, const Game::Environment& env,
 {
     {
         ExpandState expected = ExpandState::UNEXPANDED;
-        if (!this->state.compare_exchange_weak(expected,
-                                               ExpandState::EXPANDING))
+        if (!state.compare_exchange_weak(expected, ExpandState::EXPANDING))
             return;
     }
 

@@ -18,9 +18,6 @@ enum class ExpandState
 
 struct MCTSNode final
 {
-    MCTSNode() = default;
-    MCTSNode(MCTSNode&& other);
-
     std::atomic<ExpandState> state{ ExpandState::UNEXPANDED };
 
     Game::Action action;
