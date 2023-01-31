@@ -514,6 +514,8 @@ void Game::Play(const Action& action, Player player)
 {
     if (!IsValidAction(action, player))
     {
+        std::cerr << ToString() << action.ToString() << std::endl;
+
         throw std::invalid_argument("invalid action");
     }
 
@@ -652,8 +654,14 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
             !wallBoard_.IsVerticalWallPlaced(
                 currentPos.X() - 1, currentPos.Y()))  // left first case
         {
-            if (currentPos.X() <= 2 || !wallBoard_.IsVerticalWallPlaced(
-                                           currentPos.X() - 2, currentPos.Y()))
+            if (currentPos.X() > 2 && !wallBoard_.IsVerticalWallPlaced(
+                                          currentPos.X() - 2, currentPos.Y()))
+            {
+                return false;
+            }
+
+            if (wallBoard_.IsHorizontalWallPlaced(currentPos.X() - 1,
+                                                  currentPos.Y() - 1))
             {
                 return false;
             }
@@ -663,8 +671,14 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
                      currentPos.X(),
                      currentPos.Y() - 1))  // up first case
         {
-            if (currentPos.Y() <= 2 || !wallBoard_.IsHorizontalWallPlaced(
-                                           currentPos.X(), currentPos.Y() - 2))
+            if (currentPos.Y() > 2 && !wallBoard_.IsHorizontalWallPlaced(
+                                          currentPos.X(), currentPos.Y() - 2))
+            {
+                return false;
+            }
+
+            if (wallBoard_.IsVerticalWallPlaced(currentPos.X() - 1,
+                                                currentPos.Y() - 1))
             {
                 return false;
             }
@@ -683,9 +697,15 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
             !wallBoard_.IsVerticalWallPlaced(
                 currentPos.X(), currentPos.Y()))  // right first case
         {
-            if (currentPos.X() >= WALL_PLACEABLE_SIZE ||
+            if (currentPos.X() < WALL_PLACEABLE_SIZE &&
                 !wallBoard_.IsVerticalWallPlaced(currentPos.X() + 1,
                                                  currentPos.Y()))
+            {
+                return false;
+            }
+
+            if (wallBoard_.IsHorizontalWallPlaced(currentPos.X() + 1,
+                                                  currentPos.Y() - 1))
             {
                 return false;
             }
@@ -695,8 +715,14 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
                      currentPos.X(),
                      currentPos.Y() - 1))  // up first case
         {
-            if (currentPos.Y() <= 2 || !wallBoard_.IsHorizontalWallPlaced(
-                                           currentPos.X(), currentPos.Y() - 2))
+            if (currentPos.Y() > 2 && !wallBoard_.IsHorizontalWallPlaced(
+                                          currentPos.X(), currentPos.Y() - 2))
+            {
+                return false;
+            }
+
+            if (wallBoard_.IsVerticalWallPlaced(currentPos.X(),
+                                                currentPos.Y() - 1))
             {
                 return false;
             }
@@ -715,8 +741,14 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
             !wallBoard_.IsVerticalWallPlaced(
                 currentPos.X() - 1, currentPos.Y()))  // left first case
         {
-            if (currentPos.X() <= 2 || !wallBoard_.IsVerticalWallPlaced(
-                                           currentPos.X() - 2, currentPos.Y()))
+            if (currentPos.X() > 2 && !wallBoard_.IsVerticalWallPlaced(
+                                          currentPos.X() - 2, currentPos.Y()))
+            {
+                return false;
+            }
+
+            if (wallBoard_.IsHorizontalWallPlaced(currentPos.X() - 1,
+                                                  currentPos.Y()))
             {
                 return false;
             }
@@ -726,9 +758,15 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
                      currentPos.X(),
                      currentPos.Y()))  // down first case
         {
-            if (currentPos.Y() >= WALL_PLACEABLE_SIZE ||
+            if (currentPos.Y() < WALL_PLACEABLE_SIZE &&
                 !wallBoard_.IsHorizontalWallPlaced(currentPos.X(),
                                                    currentPos.Y() + 1))
+            {
+                return false;
+            }
+
+            if (wallBoard_.IsVerticalWallPlaced(currentPos.X() - 1,
+                                                currentPos.Y() + 1))
             {
                 return false;
             }
@@ -747,9 +785,15 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
             !wallBoard_.IsVerticalWallPlaced(
                 currentPos.X(), currentPos.Y()))  // right first case
         {
-            if (currentPos.X() >= WALL_PLACEABLE_SIZE ||
+            if (currentPos.X() < WALL_PLACEABLE_SIZE &&
                 !wallBoard_.IsVerticalWallPlaced(currentPos.X() + 1,
                                                  currentPos.Y()))
+            {
+                return false;
+            }
+
+            if (wallBoard_.IsHorizontalWallPlaced(currentPos.X() + 1,
+                                                  currentPos.Y()))
             {
                 return false;
             }
@@ -759,9 +803,15 @@ bool Game::isValidMove(const Actions::Move& action, Player player) const
                      currentPos.X(),
                      currentPos.Y()))  // down first case
         {
-            if (currentPos.Y() >= WALL_PLACEABLE_SIZE ||
+            if (currentPos.Y() < WALL_PLACEABLE_SIZE &&
                 !wallBoard_.IsHorizontalWallPlaced(currentPos.X(),
                                                    currentPos.Y() + 1))
+            {
+                return false;
+            }
+
+            if (wallBoard_.IsVerticalWallPlaced(currentPos.X(),
+                                                currentPos.Y() + 1))
             {
                 return false;
             }
