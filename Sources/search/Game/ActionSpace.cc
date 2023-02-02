@@ -17,7 +17,7 @@ ActionSpace::ActionSpace()
 
     for (int x = 1; x <= fights::WALL_PLACEABLE_SIZE; ++x)
     {
-        for (int y = 1; x <= fights::WALL_PLACEABLE_SIZE; ++x)
+        for (int y = 1; y <= fights::WALL_PLACEABLE_SIZE; ++y)
         {
             placeHorizontalWallActionSpace_.emplace_back(fights::Point(x, y));
             placeVerticalWallActionSpace_.emplace_back(fights::Point(x, y));
