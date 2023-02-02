@@ -15,7 +15,7 @@ MCTSNode* MCTSNode::Select(const Config& config) const
     if (mostLeftChildNode == nullptr)
         return nullptr;
 
-    float totalParentVisits = 1;
+    float totalParentVisits = 0;
     ForEachChild([&totalParentVisits](MCTSNode* node) {
         totalParentVisits += node->visits;
     });
@@ -42,7 +42,7 @@ MCTSNode* MCTSNode::Select(const Config& config) const
             const float v = child->visits;
 
             u = config.search.cPUCT * p * std::sqrt(totalParentVisits) /
-                (2.f + v);
+                (1.f + v);
         }
 
         const float value = Q + u;
@@ -90,6 +90,8 @@ void MCTSNode::Expand(const Config& config, const Game::Environment& env,
         node->player = player;
         node->action = action;
         node->policy = nnOutput.policy[action.id] / probSum;
+        node->visits = 1;
+        node->values = nnOutput.value;
 
         if (nowNode == nullptr)
             mostLeftChildNode = node;
