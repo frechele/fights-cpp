@@ -241,7 +241,8 @@ void MCTS::initRoot()
     {
         using Random = effolkronium::random_static;
 
-        std::gamma_distribution<float> dist(config_.search.DirichletNoiseAlpha);
+        const float alpha = config_.search.DirichletNoiseAlpha * Game::Environment::ACTION_SPACE_SIZE / root_->numChildren;
+        std::gamma_distribution<float> dist(alpha);
         NN::PolicyVal noise;
 
         for (auto& v : noise)
@@ -262,6 +263,7 @@ void MCTS::initRoot()
                                 noise[idx] / noiseSum;
 
             policySum += child->policy;
+            ++idx;
         });
 
         root_->ForEachChild(
