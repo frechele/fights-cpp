@@ -32,7 +32,7 @@ SimulationResult SimulationResult::FromValueNet(float val, fights::Player pla)
 SimulationResult SimulationResult::FromGameResult(fights::Player winner)
 {
     SimulationResult res;
-    res.value = 1;
+    res.value = (winner == fights::Player::NONE) ? 0 : 1;
     res.player = winner;
     return res;
 }
