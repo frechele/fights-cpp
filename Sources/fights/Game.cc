@@ -370,9 +370,6 @@ Player Game::GetWinner() const
 
 bool Game::IsEnd() const
 {
-    if (GetTurns() > 100)
-        return true;
-
     return GetWinner() != Player::NONE;
 }
 
