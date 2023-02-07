@@ -33,5 +33,7 @@ struct Config final
     } search;
 
     static Config Load(const std::string& filename);
+
+    std::string ToString() const;
 };
 }

@@ -32,7 +32,7 @@ SimulationResult SimulationResult::FromValueNet(float val, fights::Player pla)
 SimulationResult SimulationResult::FromGameResult(fights::Player winner)
 {
     SimulationResult res;
-    res.value = 1;
+    res.value = (winner == fights::Player::NONE) ? 0 : 1;
     res.player = winner;
     return res;
 }
@@ -60,16 +60,14 @@ MCTS::~MCTS() noexcept
         if (worker.joinable())
             worker.join();
 
-    enqDeleteNode(root_);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    {
-        std::scoped_lock lock(deleteMutex_);
-        runningDeleteWorker_ = false;
-        cv_.notify_all();
-    }
+    runningDeleteWorker_ = false;
     if (deleteWorker_.joinable())
         deleteWorker_.join();
+
+    deleteNode(root_);
+    delete root_;
 }
 
 void MCTS::DoSearchWithMaxSimulation()
@@ -151,21 +149,34 @@ void MCTS::deleteThread()
 {
     while (true)
     {
-        std::unique_lock lock(deleteMutex_);
+        MCTSNode* nodes;
 
-        cv_.wait(lock, [&] {
-            return !runningDeleteWorker_ || !deleteQueue_.empty();
-        });
-        if (!runningDeleteWorker_ && deleteQueue_.empty())
+        do
         {
-            break;
+            nodes = deleteNodeHead_.load();
+        } while (!deleteNodeHead_.compare_exchange_strong(nodes, nullptr));
+
+        if (nodes == nullptr)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+            if (!runningDeleteWorker_)
+            {
+                break;
+            }
+
+            continue;
         }
 
-        MCTSNode* nodeToDelete = deleteQueue_.front();
-        deleteQueue_.pop_front();
+        while (nodes != nullptr)
+        {
+            MCTSNode* nodeToDelete = nodes;
+            nodes = nodes->rightSiblingNode;
+            nodeToDelete->rightSiblingNode = nullptr;
 
-        deleteNode(nodeToDelete);
-        delete nodeToDelete;
+            deleteNode(nodeToDelete);
+            delete nodeToDelete;
+        }
     }
 }
 
@@ -183,7 +194,6 @@ void MCTS::updateRoot(MCTSNode* newNode)
     MCTSNode* node = new MCTSNode;
     if (newNode == nullptr)
     {
-        node = new MCTSNode;
         node->player = mainEnv_.GetOpponentPlayer();
     }
     else
@@ -231,7 +241,8 @@ void MCTS::initRoot()
     {
         using Random = effolkronium::random_static;
 
-        std::gamma_distribution<float> dist(config_.search.DirichletNoiseAlpha);
+        const float alpha = config_.search.DirichletNoiseAlpha * Game::Environment::ACTION_SPACE_SIZE / root_->numChildren;
+        std::gamma_distribution<float> dist(alpha);
         NN::PolicyVal noise;
 
         for (auto& v : noise)
@@ -252,6 +263,7 @@ void MCTS::initRoot()
                                 noise[idx] / noiseSum;
 
             policySum += child->policy;
+            ++idx;
         });
 
         root_->ForEachChild(
@@ -261,54 +273,35 @@ void MCTS::initRoot()
 
 void MCTS::enqDeleteNode(MCTSNode* node)
 {
-    std::scoped_lock lock(deleteMutex_);
-    deleteQueue_.emplace_back(node);
+    do
+    {
+        node->rightSiblingNode = deleteNodeHead_.load();
+    } while (
+        !deleteNodeHead_.compare_exchange_strong(node->rightSiblingNode, node));
 }
 
 void MCTS::deleteNode(MCTSNode* node)
 {
-    node->ForEachChild([this](MCTSNode* child) { deleteNode(child); });
+    std::vector<MCTSNode*> nodes;
+    node->ForEachChild(
+        [&nodes](MCTSNode* child) { nodes.emplace_back(child); });
 
-    MCTSNode* tempNowNode = node->mostLeftChildNode;
-    MCTSNode* nodeToDelete = nullptr;
-    while (tempNowNode != nullptr)
+    for (auto child : nodes)
     {
-        nodeToDelete = tempNowNode;
-        tempNowNode = tempNowNode->rightSiblingNode;
-
-        delete nodeToDelete;
+        deleteNode(child);
     }
 
-    node->mostLeftChildNode = nullptr;
+    for (auto child : nodes)
+    {
+        delete child;
+    }
 }
 
 void MCTS::simulation(Game::Environment& env, MCTSNode* node)
 {
     while (node->state == ExpandState::EXPANDED)
     {
-        MCTSNode* tmpNode = node;
-        tmpNode = node->Select(config_);
-
-        if (tmpNode == nullptr)
-        {
-            std::cout << env.ToString() << std::endl;
-
-            for (auto act : env.GetHistory())
-            {
-                std::cout << act->ToString() << " ";
-            }
-            std::cout << std::endl;
-            std::cout << "AVAILS: " << env.GetValidActions().size() << " "
-                      << static_cast<int>(node->state.load()) << " "
-                      << node->numChildren << " " << node->mostLeftChildNode
-                      << std::endl;
-
-            node = nullptr;
-        }
-        else
-        {
-            node = tmpNode;
-        }
+        node = node->Select(config_);
 
         env.Play(*node->action.action, node->player);
         Utils::AtomicAdd(node->virtualLoss, config_.search.VirtualLoss);

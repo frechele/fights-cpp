@@ -25,5 +25,6 @@ include_directories(Includes)
 add_subdirectory(Sources/fights)
 add_subdirectory(Sources/search)
 add_subdirectory(Sources/selfplay)
+add_subdirectory(Sources/selfviewer)
 
 add_subdirectory(Tests/UnitTests)

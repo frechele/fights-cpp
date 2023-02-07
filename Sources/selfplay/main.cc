@@ -6,6 +6,7 @@
 #include <thread>
 
 #include <search/NN/NNManager.hpp>
+#include <search/Game/Hashing.hpp>
 
 #include <selfplay/game.hpp>
 
@@ -37,7 +38,10 @@ void workerThread()
 
 int main()
 {
-    config.nn.MaxBatch = 10;
+	config = search::Config::Load("config.json");
+    std::cout << config.ToString() << std::endl;
+
+    search::Game::Hashing::Init();
 
     search::NN::NNManager manager(config);
 

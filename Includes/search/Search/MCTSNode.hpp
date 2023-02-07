@@ -22,6 +22,7 @@ struct MCTSNode final
 
     Game::Action action;
     fights::Player player;
+    std::uint64_t hash{ 0 };
 
     int numChildren{ 0 };
     float policy{ 0 };
