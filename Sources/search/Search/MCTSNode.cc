@@ -1,5 +1,7 @@
 #include <search/Search/MCTSNode.hpp>
 
+#include <search/Game/Hashing.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -45,7 +47,13 @@ MCTSNode* MCTSNode::Select(const Config& config) const
                 (1.f + v);
         }
 
-        const float value = Q + u;
+        float samePenalty = 0;
+        if (parentNode != nullptr)
+        {
+            samePenalty = -1000.f * (parentNode->hash == child->hash);
+        }
+
+        const float value = Q + u + samePenalty;
 
         if (maxValue < value)
         {
@@ -68,6 +76,7 @@ void MCTSNode::Expand(const Config& config, const Game::Environment& env,
     }
 
     const fights::Player player = env.GetCurrentPlayer();
+    hash = Game::Hashing::Hash(env);
 
     // filtering only valid actions
     auto actionList = env.GetValidActions();
@@ -91,7 +100,7 @@ void MCTSNode::Expand(const Config& config, const Game::Environment& env,
         node->action = action;
         node->policy = nnOutput.policy[action.id] / probSum;
         node->visits = 1;
-        node->values = nnOutput.value;
+        node->values = -1;
 
         if (nowNode == nullptr)
             mostLeftChildNode = node;
