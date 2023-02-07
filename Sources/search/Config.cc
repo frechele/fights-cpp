@@ -3,6 +3,7 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
+#include <sstream>
 
 namespace search
 {
@@ -51,5 +52,29 @@ Config Config::Load(const std::string& filename)
         j["search"].value<float>("dirichlet_eps", cfg.search.DirichletNoiseEps);
 
     return cfg;
+}
+
+std::string Config::ToString() const
+{
+    std::stringstream ss;
+
+    ss << "[nn]\n"
+       << "num_workers = " << nn.NumWorkers << "\n"
+       << "max_batch = " << nn.MaxBatch << "\n"
+       << "engine_file = " << nn.EngineFile << "\n"
+       << "engine_type = " << nn.EngineType << "\n"
+       << std::endl;
+
+    ss << "[search]\n"
+       << "num_workers = " << search.NumWorkers << "\n"
+       << "max_action = " << search.MaxAction << "\n"
+       << "virtual_loss = " << search.VirtualLoss << "\n"
+       << "c_puct = " << search.cPUCT << "\n"
+       << "max_simulation = " << search.MaxSimulation << "\n"
+       << "enable_dirichlet = " << search.EnableDirichletNoise << "\n"
+       << "dirichlet_alpha = " << search.DirichletNoiseAlpha << "\n"
+       << "dirichlet_eps = " << search.DirichletNoiseEps << "\n";
+
+    return ss.str();
 }
 }  // namespace search
