@@ -29,5 +29,6 @@ class Game
     std::vector<search::NN::Tensor> states_;
     std::vector<search::NN::PolicyVal> pis_;
     std::vector<float> zs_;
+    std::vector<int> omit_;
 };
 }  // namespace selfplay

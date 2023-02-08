@@ -7,6 +7,7 @@
 #include <iostream>
 #include <numeric>
 #include <sstream>
+#include <effolkronium/random.hpp>
 
 namespace selfplay
 {
@@ -52,14 +53,33 @@ Game::Game(const search::Config& config) : player1_(config), player2_(config)
 
 void Game::RunSingleGame()
 {
+    using Random = effolkronium::random_thread_local;
+
     search::Game::Environment env;
 
-    while (!env.IsEnd())
+    const int originalSimulations = player1_.GetConfig().search.MaxSimulation;
+    const int cuttedSimulations = 50;
+
+    while (!env.IsEnd() && env.GetTurns() < 150)
     {
         const int turnID = env.GetTurns();
 
         search::Search::MCTS& currentPla =
             (turnID % 2 == 1) ? player1_ : player2_;
+
+        if (Random::get<double>(0, 1) <= 0.25)
+        {
+            currentPla.GetConfig().search.MaxSimulation = cuttedSimulations;
+            currentPla.GetConfig().search.EnableDirichletNoise = false;
+            omit_.emplace_back(true);
+        }
+        else
+        {
+            currentPla.GetConfig().search.MaxSimulation = originalSimulations;
+            currentPla.GetConfig().search.EnableDirichletNoise = true;
+            omit_.emplace_back(false);
+        }
+
         currentPla.DoSearchWithMaxSimulation();
 
         const auto bestAction = currentPla.GetBestAction();
@@ -85,8 +105,14 @@ void Game::RunSingleGame()
         player2_.Play(bestAction);
     }
 
-    const int blueZ = (env.GetWinner() == fights::Player::BLUE) ? 1 : -1;
-    const int redZ = (env.GetWinner() == fights::Player::RED) ? 1 : -1;
+    int blueZ = (env.GetWinner() == fights::Player::BLUE) ? 1 : -1;
+    int redZ = (env.GetWinner() == fights::Player::RED) ? 1 : -1;
+
+    if (env.GetWinner() == fights::Player::NONE)
+    {
+        blueZ = 0;
+        redZ = 0;
+    }
 
     const int totalTurns = states_.size();
     for (int i = 0; i < totalTurns; ++i)
@@ -120,9 +146,10 @@ void Game::DumpToFile(const std::string& filename) const
 
     for (int i = 0; i < totalTurns; ++i)
     {
-        fwrite(states_[i].data(), 4 * stateSize, 1, fp);
-        fwrite(pis_[i].data(), 4 * actionSpaceSize, 1, fp);
+        fwrite(states_[i].data(), 4, stateSize, fp);
+        fwrite(pis_[i].data(), 4, actionSpaceSize, fp);
         fwrite(&zs_[i], 4, 1, fp);
+        fwrite(&omit_[i], 4, 1, fp);
     }
 
     fclose(fp);
