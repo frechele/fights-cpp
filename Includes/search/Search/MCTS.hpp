@@ -40,6 +40,11 @@ class MCTS final
     Game::Action GetBestAction() const;
     const MCTSNode* GetRoot() const;
 
+    const Config& GetConfig() const;
+    Config& GetConfig();
+
+    void DumpStats() const;
+
  private:
     void workerThread();
     void deleteThread();

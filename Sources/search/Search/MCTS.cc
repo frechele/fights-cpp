@@ -4,10 +4,10 @@
 #include <cassert>
 #include <chrono>
 #include <effolkronium/random.hpp>
+#include <iomanip>
+#include <iostream>
 #include <limits>
 #include <random>
-
-#include <iostream>
 
 #include <search/NN/NNManager.hpp>
 #include <search/Utils/Utils.hpp>
@@ -121,6 +121,42 @@ Game::Action MCTS::GetBestAction() const
 const MCTSNode* MCTS::GetRoot() const
 {
     return root_;
+}
+
+const Config& MCTS::GetConfig() const
+{
+    return config_;
+}
+
+Config& MCTS::GetConfig()
+{
+    return const_cast<Config&>(std::as_const(*this).GetConfig());
+}
+
+void MCTS::DumpStats() const
+{
+    std::vector<const MCTSNode*> nodes;
+    root_->ForEachChild([&nodes](const MCTSNode* child) {
+        if (child->visits > 1)
+        {
+            nodes.emplace_back(child);
+        }
+    });
+
+    std::stable_sort(begin(nodes), end(nodes),
+                     [](const MCTSNode* a, const MCTSNode* b) {
+                         return a->visits > b->visits;
+                     });
+
+    for (const MCTSNode* child : nodes)
+    {
+        std::cerr << std::fixed << child->action.action->ToString()
+                  << " (P: " << std::setprecision(4) << child->policy
+                  << "), value: " << std::setprecision(3)
+                  << (1 + child->values / child->visits) / 2.
+                  << ", visits: " << child->visits << "\n";
+    }
+    std::cerr << std::endl;
 }
 
 void MCTS::workerThread()
@@ -241,7 +277,9 @@ void MCTS::initRoot()
     {
         using Random = effolkronium::random_static;
 
-        const float alpha = config_.search.DirichletNoiseAlpha * Game::Environment::ACTION_SPACE_SIZE / root_->numChildren;
+        const float alpha = config_.search.DirichletNoiseAlpha *
+                            Game::Environment::ACTION_SPACE_SIZE /
+                            root_->numChildren;
         std::gamma_distribution<float> dist(alpha);
         NN::PolicyVal noise;
 

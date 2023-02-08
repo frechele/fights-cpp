@@ -21,4 +21,4 @@ find_library(LIBUUID_LIBRARY libuuid.a)
 
 add_executable(${target} ${headers} ${sources})
 include_directories(${LIBUUID_INCLUDE_DIR})
-target_link_libraries(${target} fights search Threads::Threads ${LIBUUID_LIBRARY})
+target_link_libraries(${target} fights search Threads::Threads ${LIBUUID_LIBRARY} ${TORCH_LIBRARIES})
