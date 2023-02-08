@@ -38,7 +38,7 @@ void workerThread()
 
 int main()
 {
-	config = search::Config::Load("config.json");
+	config = search::Config::Load("config_self.json");
     std::cout << config.ToString() << std::endl;
 
     search::Game::Hashing::Init();
@@ -48,7 +48,8 @@ int main()
     selfplay::Game game(config);
 
     std::vector<std::thread> workers;
-    for (int rank = 0; rank < 20; ++rank)
+    const int numWorkers = std::thread::hardware_concurrency();
+    for (int rank = 0; rank < numWorkers; ++rank)
     {
         workers.emplace_back(workerThread);
     }
@@ -59,6 +60,11 @@ int main()
 
         std::cout << "[LOG] " << numOfGames.load() << " games were created"
                   << std::endl;
+
+        if (numOfGames.load() >= 1000)
+        {
+            stopFlag = true;
+        }
     }
 
     for (auto& worker : workers)
