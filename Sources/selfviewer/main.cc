@@ -35,6 +35,7 @@ int main(int argc, char** argv)
     std::vector<float> state(stateSize);
     std::vector<float> pis(actionSpaceSize);
     float z;
+    int omit;
 
     for (int i = 0; i < turns; ++i)
     {
@@ -43,6 +44,7 @@ int main(int argc, char** argv)
         fread(state.data(), 4, stateSize, fp);
         fread(pis.data(), 4, actionSpaceSize, fp);
         fread(&z, 4, 1, fp);
+        fread(&omit, 4, 1, fp);
 
         int maxAction = 0;
         float maxPiValue = -999;
@@ -63,7 +65,8 @@ int main(int argc, char** argv)
                   << "max action: "
                   << game.GetActionSpace()[maxAction].action->ToString() << " ["
                   << maxAction << "]\n"
-                  << "z: " << z << std::endl
+                  << "z: " << z << "\n"
+                  << "omit: " << omit << "\n"
                   << std::endl;
 
         game.Play(*game.GetActionSpace()[maxAction].action);
