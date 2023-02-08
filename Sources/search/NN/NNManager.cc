@@ -5,6 +5,7 @@
 #include <memory>
 
 #include <search/NN/FakeNet.hpp>
+#include <search/NN/TorchNet.hpp>
 
 namespace search::NN
 {
@@ -58,6 +59,10 @@ void NNManager::workerThread(int rank)
     if (config_.nn.EngineType == "fake")
     {
         network = std::make_unique<FakeNet>();
+    }
+    else if (config_.nn.EngineType == "torch")
+    {
+        network = std::make_unique<TorchNet>();
     }
 
     network->Initialize(rank, config_.nn.EngineFile);
